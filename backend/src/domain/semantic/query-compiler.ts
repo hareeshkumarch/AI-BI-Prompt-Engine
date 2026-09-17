@@ -5,10 +5,10 @@ import { QueryCompileError, type CompiledQuery, type PlanColumn, type PlanJoin, 
 import { resolveRelativeDate } from "./relative-date";
 import { aggregate, placeholder, qualify, quoteIdentifier, truncateToGrain } from "./sql-dialect";
 import {
+  allowsAggregation,
   fieldByName,
   isMetric,
   metricByName,
-  MEASURE_ROLES,
   type SemanticField,
   type SemanticModel,
 } from "./semantic-model";
@@ -109,15 +109,21 @@ function compileCondition(context: Context, node: ConditionNode): string {
 }
 
 function compileTopN(context: Context, node: TopNNode, spec: ChartSpec): string {
-  const dimension = requireField(context, node.field);
+  const scoped: Context = { ...context, tables: new Set([context.model.baseTable]) };
+  const dimension = requireField(scoped, node.field);
+  requireField(context, node.field);
+
   const measureRef = spec.measures.find((ref) => ref.field === node.measure)
     ?? { field: node.measure, aggregation: "none" as const, grain: null, label: null };
   const column = qualify(dimension.table, dimension.column, context.dialect);
-  const measure = measureExpression(context, measureRef);
+  const measure = measureExpression(scoped, measureRef);
+  const joins = joinsForTables(context.model, context.dialect, scoped.tables);
   const direction = node.direction === "top" ? "DESC" : "ASC";
+
   const inner = [
     `SELECT ${column}`,
-    `FROM ${quoteIdentifier(dimension.table, context.dialect)}`,
+    `FROM ${quoteIdentifier(context.model.baseTable, context.dialect)}`,
+    ...joins.map((join) => `LEFT JOIN ${join.table} ON ${join.on}`),
     `GROUP BY ${column}`,
     `ORDER BY ${measure} ${direction}`,
     `LIMIT ${Math.max(1, Math.trunc(node.n))}`,
@@ -152,7 +158,8 @@ function compileFilter(context: Context, node: FilterNode, spec: ChartSpec): str
   }
 }
 
-function resolveJoins(context: Context): PlanJoin[] {
+function joinsForTables(model: SemanticModel, dialect: SqlDialect, tables: Set<string>): PlanJoin[] {
+  const context = { model, dialect, tables } as Pick<Context, "model" | "dialect" | "tables">;
   const base = context.model.baseTable;
   const needed = [...context.tables].filter((table) => table !== base);
   if (needed.length === 0) return [];
@@ -206,8 +213,14 @@ export function planQuery(model: SemanticModel, spec: ChartSpec, options: Compil
 
   for (const ref of spec.measures) {
     const entry = fieldByName(model, ref.field) ?? metricByName(model, ref.field);
-    if (entry && !isMetric(entry) && !MEASURE_ROLES.includes(entry.role)) {
-      throw new QueryCompileError("NOT_A_MEASURE", `Field "${ref.field}" is a ${entry.role.toLowerCase()} and cannot be aggregated as a measure.`);
+    if (entry && !isMetric(entry)) {
+      const aggregation = ref.aggregation === "none" ? entry.defaultAggregation : ref.aggregation;
+      if (aggregation === "none" || !allowsAggregation(entry, aggregation)) {
+        throw new QueryCompileError(
+          "NOT_A_MEASURE",
+          `Field "${ref.field}" is a ${entry.role.toLowerCase()} and cannot be aggregated with ${aggregation}.`,
+        );
+      }
     }
     select.push({
       expression: measureExpression(context, ref),
@@ -233,9 +246,9 @@ export function planQuery(model: SemanticModel, spec: ChartSpec, options: Compil
         if (!column) throw new QueryCompileError("INVALID_SORT", `Cannot sort by "${entry.field}" — it is not projected.`);
         return `${column.expression} ${entry.direction === "desc" ? "DESC" : "ASC"}`;
       })
-    : defaultOrder(select);
+    : defaultOrder(select, model);
 
-  const joins = resolveJoins(context);
+  const joins = joinsForTables(model, context.dialect, context.tables);
   const maxLimit = options.maxLimit ?? DEFAULT_MAX_LIMIT;
 
   return {
@@ -251,7 +264,11 @@ export function planQuery(model: SemanticModel, spec: ChartSpec, options: Compil
   };
 }
 
-function defaultOrder(select: PlanColumn[]) {
+function defaultOrder(select: PlanColumn[], model: SemanticModel) {
+  const temporal = select.find(
+    (column) => column.role === "dimension" && fieldByName(model, column.sourceField)?.role === "TIME_DIMENSION",
+  );
+  if (temporal) return [`${temporal.expression} ASC`];
   const measure = select.find((column) => column.role === "measure");
   if (measure) return [`${measure.expression} DESC`];
   const dimension = select[0];

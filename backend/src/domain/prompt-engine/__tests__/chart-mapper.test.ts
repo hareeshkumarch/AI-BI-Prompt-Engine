@@ -147,3 +147,25 @@ describe("recommendCharts", () => {
     expect([primary, ...alternatives].map((item) => item.chartType)).toContain("table");
   });
 });
+
+describe("long time axes", () => {
+  it("still offers a line for a two-year monthly series", () => {
+    const rows = Array.from({ length: 24 }, (_, index) => ({
+      month: `2025-${String((index % 12) + 1).padStart(2, "0")}-01`,
+      revenue: 100 + index,
+    }));
+    const { primary } = recommendCharts(profileResult(["month", "revenue"], rows));
+    expect(primary.chartType).toBe("line");
+  });
+
+  it("pivots a long monthly series split by segment into a multi-series line", () => {
+    const rows = Array.from({ length: 72 }, (_, index) => ({
+      ordered_at: `2025-${String((index % 24) + 1).padStart(2, "0")}-01`,
+      segment: ["enterprise", "mid_market", "startup"][index % 3],
+      net_revenue: 1000 + index,
+    }));
+    const { primary } = recommendCharts(profileResult(["ordered_at", "segment", "net_revenue"], rows));
+    expect(primary.chartType).toBe("multi_line");
+    expect(primary.series?.field).toBe("segment");
+  });
+});

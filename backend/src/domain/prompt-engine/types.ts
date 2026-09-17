@@ -115,7 +115,6 @@ export type QueryRun = {
 export type QueryRunInput = {
   question: string;
   connectionId: string;
-  dialect: SqlDialect;
   mode: "analyst" | "sql_only";
 };
 

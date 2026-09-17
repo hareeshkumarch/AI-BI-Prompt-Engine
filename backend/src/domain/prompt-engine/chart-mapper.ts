@@ -68,9 +68,9 @@ function bind(definition: ChartDefinition, profile: DataProfile): ChartEncoding 
   if (boundMeasures.length < (longFormat ? 1 : definition.measures[0])) return null;
 
   const axis = axisFields[0] ?? null;
-  for (const field of [axis, seriesField]) {
-    if (field && field.distinctCount > definition.maxCategories) return null;
-  }
+  // A category cap limits distinguishable marks; a time axis is allowed to be long.
+  if (axis && axis.type !== "temporal" && axis.distinctCount > definition.maxCategories) return null;
+  if (seriesField && seriesField.distinctCount > definition.maxCategories) return null;
 
   const context: CandidateContext = { profile, category: axis, series: seriesField, measures: boundMeasures };
   if (definition.accepts && !definition.accepts(context)) return null;

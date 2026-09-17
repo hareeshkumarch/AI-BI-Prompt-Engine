@@ -63,7 +63,8 @@ export function validateChartSpec(
     const isMeasureLike = metric || MEASURE_ROLES.includes(role);
     const isDimensionLike = !metric && DIMENSION_ROLES.includes(role);
 
-    if (channel && MEASURE_CHANNELS.includes(channel) && !isMeasureLike) {
+    const aggregatable = ref.aggregation !== "none" && allowsAggregation(entry, ref.aggregation);
+    if (channel && MEASURE_CHANNELS.includes(channel) && !isMeasureLike && !aggregatable) {
       add("NOT_A_MEASURE", `Channel "${channel}" needs a measure but "${ref.field}" is a ${role.toLowerCase()}.`, path);
     }
     if (channel && DIMENSION_CHANNELS.includes(channel) && isMeasureLike && channel !== "x") {
@@ -71,13 +72,7 @@ export function validateChartSpec(
     }
 
     if (ref.aggregation !== "none") {
-      if (!isMeasureLike) {
-        add(
-          "AGGREGATION_NOT_ALLOWED",
-          `${ref.aggregation.toUpperCase()}(${ref.field}) is not allowed — "${ref.field}" is a ${role.toLowerCase()}.`,
-          path,
-        );
-      } else if (!allowsAggregation(entry, ref.aggregation)) {
+      if (!allowsAggregation(entry, ref.aggregation)) {
         add(
           "AGGREGATION_NOT_ALLOWED",
           `"${ref.field}" does not allow the ${ref.aggregation} aggregation.`,

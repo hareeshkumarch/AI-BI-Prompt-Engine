@@ -116,3 +116,17 @@ describe("compileQuery", () => {
       .toThrow(/not available for the sqlite dialect/);
   });
 });
+
+describe("default ordering", () => {
+  it("orders a time series chronologically, not by magnitude", () => {
+    const { sql } = compile({
+      dimensions: [channel("ordered_at", { grain: "month" })],
+      measures: [channel("net_revenue")],
+    });
+    expect(sql).toContain(`ORDER BY DATE_TRUNC('month', "orders"."ordered_at") ASC`);
+  });
+
+  it("still ranks a categorical breakdown by its measure", () => {
+    expect(compile(byStatus).sql).toContain('ORDER BY SUM("orders"."net_revenue") DESC');
+  });
+});

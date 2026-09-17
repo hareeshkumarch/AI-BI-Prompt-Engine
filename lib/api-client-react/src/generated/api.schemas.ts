@@ -138,81 +138,179 @@ export interface QueryResult {
   truncated: boolean;
 }
 
-export type FieldType = typeof FieldType[keyof typeof FieldType];
+export type Aggregation = typeof Aggregation[keyof typeof Aggregation];
 
 
-export const FieldType = {
-  temporal: 'temporal',
-  quantitative: 'quantitative',
-  nominal: 'nominal',
-  ordinal: 'ordinal',
-  boolean: 'boolean',
-  identifier: 'identifier',
-} as const;
-
-export type FieldRole = typeof FieldRole[keyof typeof FieldRole];
-
-
-export const FieldRole = {
-  dimension: 'dimension',
-  measure: 'measure',
-  key: 'key',
-} as const;
-
-export type TemporalGrain = typeof TemporalGrain[keyof typeof TemporalGrain];
-
-
-export const TemporalGrain = {
-  year: 'year',
-  quarter: 'quarter',
-  month: 'month',
-  week: 'week',
-  day: 'day',
-  hour: 'hour',
-  minute: 'minute',
-} as const;
-
-export type FieldProfileMonotonic = typeof FieldProfileMonotonic[keyof typeof FieldProfileMonotonic];
-
-
-export const FieldProfileMonotonic = {
-  increasing: 'increasing',
-  decreasing: 'decreasing',
+export const Aggregation = {
+  sum: 'sum',
+  avg: 'avg',
+  min: 'min',
+  max: 'max',
+  count: 'count',
+  count_distinct: 'count_distinct',
+  median: 'median',
+  p90: 'p90',
+  p95: 'p95',
   none: 'none',
 } as const;
 
-/**
- * Inferred semantic type and statistics for one result column.
- */
-export interface FieldProfile {
-  name: string;
-  type: FieldType;
-  role: FieldRole;
-  nullRate: number;
-  distinctCount: number;
-  cardinalityRatio: number;
-  continuous: boolean;
-  monotonic: FieldProfileMonotonic;
+export type FieldRoleName = typeof FieldRoleName[keyof typeof FieldRoleName];
+
+
+export const FieldRoleName = {
+  DIMENSION: 'DIMENSION',
+  MEASURE: 'MEASURE',
+  TIME_DIMENSION: 'TIME_DIMENSION',
+  IDENTIFIER: 'IDENTIFIER',
+  GEOGRAPHY: 'GEOGRAPHY',
+  BOOLEAN: 'BOOLEAN',
+  TEXT: 'TEXT',
+  DERIVED_FIELD: 'DERIVED_FIELD',
+  METRIC: 'METRIC',
+} as const;
+
+export type FormatRuleKind = typeof FormatRuleKind[keyof typeof FormatRuleKind];
+
+
+export const FormatRuleKind = {
+  number: 'number',
+  currency: 'currency',
+  percent: 'percent',
+  datetime: 'datetime',
+  text: 'text',
+} as const;
+
+export interface FormatRule {
+  kind: FormatRuleKind;
+  decimals: number;
+  compact: boolean;
   /** @nullable */
-  min: number | null;
+  currency: string | null;
   /** @nullable */
-  max: number | null;
-  /** @nullable */
-  sum: number | null;
-  temporalGrain: TemporalGrain | null;
-  sampleValues: string[];
+  unit: string | null;
 }
 
-/**
- * The typed schema of a result set, used to decide which charts are valid.
- */
-export interface DataProfile {
-  rowCount: number;
-  fields: FieldProfile[];
-  measures: string[];
-  dimensions: string[];
-  temporal: string[];
-  signature: string;
+export interface SemanticFieldSummary {
+  name: string;
+  label: string;
+  description: string;
+  table: string;
+  role: FieldRoleName;
+  semanticType: string;
+  defaultAggregation: Aggregation;
+  allowedAggregations: Aggregation[];
+  format: FormatRule;
+  synonyms: string[];
+  /** @nullable */
+  geographyLevel: string | null;
+}
+
+export interface SemanticMetricSummary {
+  name: string;
+  label: string;
+  description: string;
+  format: FormatRule;
+}
+
+export interface SemanticHierarchySummary {
+  name: string;
+  label: string;
+  levels: string[];
+}
+
+export interface SemanticModelSummary {
+  id: string;
+  label: string;
+  description: string;
+  baseTable: string;
+  engine: string;
+  dialect: string;
+  fields: SemanticFieldSummary[];
+  metrics: SemanticMetricSummary[];
+  hierarchies: SemanticHierarchySummary[];
+}
+
+export interface ExploreChannel {
+  field: string;
+  aggregation?: Aggregation;
+  /** @nullable */
+  grain?: string | null;
+}
+
+export type ExploreFilterOperator = typeof ExploreFilterOperator[keyof typeof ExploreFilterOperator];
+
+
+export const ExploreFilterOperator = {
+  eq: 'eq',
+  neq: 'neq',
+  gt: 'gt',
+  gte: 'gte',
+  lt: 'lt',
+  lte: 'lte',
+  between: 'between',
+  in: 'in',
+  not_in: 'not_in',
+  contains: 'contains',
+  not_contains: 'not_contains',
+  starts_with: 'starts_with',
+  ends_with: 'ends_with',
+  is_null: 'is_null',
+  is_not_null: 'is_not_null',
+} as const;
+
+export interface ExploreFilter {
+  field: string;
+  operator: ExploreFilterOperator;
+  values: unknown[];
+}
+
+export type ExploreSortDirection = typeof ExploreSortDirection[keyof typeof ExploreSortDirection];
+
+
+export const ExploreSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface ExploreSort {
+  field: string;
+  direction: ExploreSortDirection;
+}
+
+export interface ExploreQueryInput {
+  /** @nullable */
+  chartType?: string | null;
+  dimensions: ExploreChannel[];
+  measures: ExploreChannel[];
+  filters?: ExploreFilter[];
+  sort?: ExploreSort[];
+  limit?: number;
+}
+
+export interface ExecutionStats {
+  engine: string;
+  dialect: string;
+  queryTimeMs: number;
+  databaseTimeMs: number;
+  rowsReturned: number;
+  bytesReturned: number;
+  truncated: boolean;
+  cacheHit: boolean;
+}
+
+export type ValidationIssueSeverity = typeof ValidationIssueSeverity[keyof typeof ValidationIssueSeverity];
+
+
+export const ValidationIssueSeverity = {
+  error: 'error',
+  warning: 'warning',
+} as const;
+
+export interface ValidationIssue {
+  code: string;
+  message: string;
+  path: string;
+  severity: ValidationIssueSeverity;
 }
 
 export type ChartType = typeof ChartType[keyof typeof ChartType];
@@ -241,15 +339,6 @@ export const ChartType = {
   treemap: 'treemap',
 } as const;
 
-/**
- * One result column bound to an encoding channel.
- */
-export interface FieldRef {
-  field: string;
-  type: FieldType;
-  grain: TemporalGrain | null;
-}
-
 export type ChartEncodingFamily = typeof ChartEncodingFamily[keyof typeof ChartEncodingFamily];
 
 
@@ -261,6 +350,40 @@ export const ChartEncodingFamily = {
   distribution: 'distribution',
   relationship: 'relationship',
 } as const;
+
+export type FieldType = typeof FieldType[keyof typeof FieldType];
+
+
+export const FieldType = {
+  temporal: 'temporal',
+  quantitative: 'quantitative',
+  nominal: 'nominal',
+  ordinal: 'ordinal',
+  boolean: 'boolean',
+  identifier: 'identifier',
+} as const;
+
+export type TemporalGrain = typeof TemporalGrain[keyof typeof TemporalGrain];
+
+
+export const TemporalGrain = {
+  year: 'year',
+  quarter: 'quarter',
+  month: 'month',
+  week: 'week',
+  day: 'day',
+  hour: 'hour',
+  minute: 'minute',
+} as const;
+
+/**
+ * One result column bound to an encoding channel.
+ */
+export interface FieldRef {
+  field: string;
+  type: FieldType;
+  grain: TemporalGrain | null;
+}
 
 export type ChartEncodingOrientation = typeof ChartEncodingOrientation[keyof typeof ChartEncodingOrientation];
 
@@ -310,6 +433,68 @@ export interface ChartEncoding {
   score: number;
 }
 
+export type FieldRole = typeof FieldRole[keyof typeof FieldRole];
+
+
+export const FieldRole = {
+  dimension: 'dimension',
+  measure: 'measure',
+  key: 'key',
+} as const;
+
+export type FieldProfileMonotonic = typeof FieldProfileMonotonic[keyof typeof FieldProfileMonotonic];
+
+
+export const FieldProfileMonotonic = {
+  increasing: 'increasing',
+  decreasing: 'decreasing',
+  none: 'none',
+} as const;
+
+/**
+ * Inferred semantic type and statistics for one result column.
+ */
+export interface FieldProfile {
+  name: string;
+  type: FieldType;
+  role: FieldRole;
+  nullRate: number;
+  distinctCount: number;
+  cardinalityRatio: number;
+  continuous: boolean;
+  monotonic: FieldProfileMonotonic;
+  /** @nullable */
+  min: number | null;
+  /** @nullable */
+  max: number | null;
+  /** @nullable */
+  sum: number | null;
+  temporalGrain: TemporalGrain | null;
+  sampleValues: string[];
+}
+
+/**
+ * The typed schema of a result set, used to decide which charts are valid.
+ */
+export interface DataProfile {
+  rowCount: number;
+  fields: FieldProfile[];
+  measures: string[];
+  dimensions: string[];
+  temporal: string[];
+  signature: string;
+}
+
+export interface ExploreQueryResult {
+  sql: string;
+  result: QueryResult;
+  stats: ExecutionStats;
+  encoding: ChartEncoding;
+  alternatives: ChartEncoding[];
+  dataProfile: DataProfile;
+  issues: ValidationIssue[];
+}
+
 export interface InsightOutput {
   insights: string[];
   chartType: ChartType;
@@ -319,17 +504,6 @@ export interface InsightOutput {
   confidence: number;
 }
 
-export type QueryRunInputDialect = typeof QueryRunInputDialect[keyof typeof QueryRunInputDialect];
-
-
-export const QueryRunInputDialect = {
-  postgresql: 'postgresql',
-  mysql: 'mysql',
-  snowflake: 'snowflake',
-  sqlite: 'sqlite',
-  duckdb: 'duckdb',
-} as const;
-
 export type QueryRunInputMode = typeof QueryRunInputMode[keyof typeof QueryRunInputMode];
 
 
@@ -338,11 +512,13 @@ export const QueryRunInputMode = {
   sql_only: 'sql_only',
 } as const;
 
+/**
+ * The connected engine owns the SQL dialect; callers do not choose it.
+ */
 export interface QueryRunInput {
   /** @minLength 3 */
   question: string;
   connectionId: string;
-  dialect: QueryRunInputDialect;
   mode: QueryRunInputMode;
 }
 

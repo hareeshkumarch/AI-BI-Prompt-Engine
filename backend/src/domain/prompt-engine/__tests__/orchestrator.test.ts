@@ -5,7 +5,6 @@ import type { QueryRunInput } from "../types";
 const baseInput: QueryRunInput = {
   question: "Revenue by month",
   connectionId: "warehouse-demo",
-  dialect: "postgresql",
   mode: "analyst",
 };
 
@@ -34,13 +33,22 @@ describe("executeRun", () => {
     expect(run.stages.slice(2).every((stage) => stage.status === "skipped")).toBe(true);
   });
 
-  it("emits dialect-appropriate date bucketing", async () => {
-    const mysql = await executeRun({ ...baseInput, dialect: "mysql" });
-    expect(mysql.sql).toContain("DATE_FORMAT");
-    const sqlite = await executeRun({ ...baseInput, dialect: "sqlite" });
-    expect(sqlite.sql).toContain("strftime");
-    expect(sqlite.status).toBe("completed");
+  it("generates and executes against the connected engine's dialect", async () => {
+    const run = await executeRun(baseInput);
+    expect(run.dialect).toBe("duckdb");
+    expect(run.sql).toContain("DATE_TRUNC");
+    expect(run.status).toBe("completed");
   });
+
+  it("returns real aggregated rows rather than a canned fixture", async () => {
+    const run = await executeRun({ ...baseInput, question: "Top customers by spend" });
+    expect(run.status).toBe("completed");
+    expect(run.result?.rowCount).toBe(5);
+    expect(run.result?.columns).toEqual(["company_name", "total_spend"]);
+    expect(new Set(run.result?.rows.map((row) => row["company_name"])).size).toBe(5);
+    expect(run.stages.find((item) => item.id === "execute")?.detail).toMatch(/Aggregated on duckdb/);
+  });
+
 });
 
 describe("repairRun", () => {

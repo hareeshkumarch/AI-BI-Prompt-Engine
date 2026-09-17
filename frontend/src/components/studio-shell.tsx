@@ -1,4 +1,4 @@
-import { Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
+import { Compass, Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useGetStudioOverview } from '@workspace/api-client-react';
@@ -7,6 +7,7 @@ type StudioShellProps = { children: React.ReactNode };
 
 const navItems = [
   { href: '/', label: 'Workspace', icon: LayoutDashboard },
+  { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/schema', label: 'Schema context', icon: GitBranch },
   { href: '/connections', label: 'Connections', icon: Network },
 ];

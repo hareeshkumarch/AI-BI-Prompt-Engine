@@ -13,9 +13,8 @@ An AI-native Business Intelligence workspace that turns plain-English questions 
 - **Auto-Mapping Engine** — A declarative catalog of 20 chart types, each stating the field roles it requires; the mapper binds columns to encoding channels, scores the candidates and returns a primary chart plus every viable alternative
 - **Interactive Visualizations** — Charts rendered from the server-side encoding with Recharts, switchable in place between the alternatives the data supports
 
-> **Note on execution.** The `execute` stage currently returns a bounded demo result set from the
-> in-memory catalog rather than issuing the generated SQL against a live warehouse. Everything
-> upstream of it — contextualization, generation, and the guardrails — runs for real.
+- **Semantic Layer** — Charts address business fields (`net_revenue`), never physical columns (`orders.total_amount`); each field carries its role, semantic type, allowed aggregations and formatting
+- **Server-Side Aggregation** — Field selections compile to parameterized SQL and aggregate on the engine; only the result reaches the browser
 
 ## 🏗️ Architecture
 
@@ -34,6 +33,18 @@ AI-BI-Prompt-Engine/
 ├── backend/                 # Express 5 API server
 │   ├── src/
 │   │   ├── domain/          # Business logic
+│   │   │   ├── execution/           # Query engines, normalization, observability
+│   │   │   │   ├── duckdb-executor.ts
+│   │   │   │   ├── postgres-executor.ts
+│   │   │   │   ├── normalize.ts
+│   │   │   │   └── query-service.ts
+│   │   │   ├── semantic/            # Semantic layer + query planning
+│   │   │   │   ├── schema-discovery.ts
+│   │   │   │   ├── semantic-model.ts
+│   │   │   │   ├── chart-spec.ts
+│   │   │   │   ├── filter-ast.ts
+│   │   │   │   ├── query-compiler.ts
+│   │   │   │   └── chart-spec-validator.ts
 │   │   │   └── prompt-engine/
 │   │   │       ├── catalog.ts              # Schema catalog
 │   │   │       ├── chart-catalog.ts         # 20 chart types + data requirements
@@ -62,6 +73,33 @@ AI-BI-Prompt-Engine/
 ├── pnpm-workspace.yaml      # pnpm workspace configuration
 └── tsconfig.base.json       # Shared TypeScript config
 ```
+
+## 🔁 Query pipeline
+
+```
+Physical schema  ->  Semantic model  ->  ChartSpec  ->  QueryPlan  ->  SQL
+                                                                        |
+                          Chart  <-  Encoding  <-  Data profile  <-  Result
+```
+
+Nothing in the browser ever sees a raw table. A field selection compiles to parameterized SQL, the
+engine aggregates, and the normalized result is profiled and mapped to a chart encoding.
+
+### Engines
+
+| Engine | When it is used | Notes |
+| ------ | --------------- | ----- |
+| **DuckDB** (default) | always, unless Postgres is configured | Embedded and seeded in-process with ~90k rows across five tables — no external service needed |
+| **Postgres** | `DATA_ENGINE=postgres` with `DATABASE_URL` | Uses `statement_timeout` and backend cancellation |
+
+Both enforce a statement timeout (`QUERY_TIMEOUT_MS`), a row ceiling (`QUERY_MAX_ROWS`) and
+caller-driven cancellation — closing the HTTP connection aborts the in-flight query.
+
+### Explore
+
+`/explore` is the semantic layer made visible: pick fields, and each change compiles, executes and
+re-charts. The generated SQL, the engine timings, the rows returned and the payload size are all on
+screen, so it is always clear what ran and what came back.
 
 ## 📊 Chart selection
 
@@ -191,6 +229,9 @@ pnpm run codegen
 | `OPENAI_TIMEOUT_MS` | Abort the generation call after this long              | `20000`          |
 | `CORS_ORIGIN`       | Comma-separated allowed origins, or `*`                | `*`              |
 | `LOG_LEVEL`         | Pino log level                                         | `info`           |
+| `DATA_ENGINE`       | `duckdb` (default) or `postgres`                       | `duckdb`         |
+| `QUERY_TIMEOUT_MS`  | Statement timeout for every query                      | `15000`          |
+| `QUERY_MAX_ROWS`    | Hard ceiling on rows returned to the caller            | `5000`           |
 
 ### Frontend
 
