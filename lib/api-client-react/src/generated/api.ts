@@ -22,6 +22,8 @@ import type {
 import type {
   DataConnection,
   ErrorResponse,
+  ExploreQueryInput,
+  ExploreQueryResult,
   GetSchemaContextParams,
   HealthStatus,
   QueryRun,
@@ -29,6 +31,7 @@ import type {
   QueryRunSummary,
   RepairRunInput,
   SchemaContext,
+  SemanticModelSummary,
   StudioOverview
 } from './api.schemas';
 
@@ -374,6 +377,171 @@ export function useGetSchemaContext<TData = Awaited<ReturnType<typeof getSchemaC
 
 
 
+
+export const getGetSemanticModelUrl = () => {
+
+
+
+
+  return `/api/studio/model`
+}
+
+/**
+ * @summary Get the semantic model for the connected dataset
+ */
+export const getSemanticModel = async ( options?: Parameters<typeof customFetch>[1]): Promise<SemanticModelSummary> => {
+
+  return customFetch<SemanticModelSummary>(getGetSemanticModelUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSemanticModelQueryKey = () => {
+    return [
+    `/api/studio/model`
+    ] as const;
+    }
+
+
+export const getGetSemanticModelQueryOptions = <TData = Awaited<ReturnType<typeof getSemanticModel>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSemanticModel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSemanticModelQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSemanticModel>>> = ({ signal }) => getSemanticModel({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSemanticModel>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSemanticModelQueryResult = NonNullable<Awaited<ReturnType<typeof getSemanticModel>>>
+export type GetSemanticModelQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the semantic model for the connected dataset
+ */
+
+export function useGetSemanticModel<TData = Awaited<ReturnType<typeof getSemanticModel>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSemanticModel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSemanticModelQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRunExploreQueryUrl = () => {
+
+
+
+
+  return `/api/studio/query`
+}
+
+/**
+ * @summary Compile a field selection into SQL, execute it, and return the aggregated result
+ */
+export const runExploreQuery = async (exploreQueryInput: ExploreQueryInput, options?: Parameters<typeof customFetch>[1]): Promise<ExploreQueryResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ExploreQueryResult>(getRunExploreQueryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(exploreQueryInput)
+  }
+);}
+
+
+
+
+
+export const getRunExploreQueryMutationKey = () => ['runExploreQuery'] as const;
+
+export const getRunExploreQueryMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runExploreQuery>>, TError,RunExploreQueryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runExploreQuery>>, TError,RunExploreQueryMutationVariables, TContext> => {
+
+const mutationKey = getRunExploreQueryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runExploreQuery>>, RunExploreQueryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  runExploreQuery(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunExploreQueryMutationResult = NonNullable<Awaited<ReturnType<typeof runExploreQuery>>>
+    export type RunExploreQueryMutationBody = BodyType<ExploreQueryInput>
+    export type RunExploreQueryMutationError = ErrorType<ErrorResponse>
+    export type RunExploreQueryMutationVariables = {data: BodyType<ExploreQueryInput>}
+
+    /**
+ * @summary Compile a field selection into SQL, execute it, and return the aggregated result
+ */
+export const useRunExploreQuery = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runExploreQuery>>, TError,RunExploreQueryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runExploreQuery>>,
+        TError,
+        RunExploreQueryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRunExploreQueryMutationOptions(options));
+    }
 
 export const getListQueryRunsUrl = () => {
 

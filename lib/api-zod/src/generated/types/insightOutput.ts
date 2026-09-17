@@ -5,12 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ChartSpec } from './chartSpec';
-import type { InsightOutputChartType } from './insightOutputChartType';
+import type { ChartEncoding } from './chartEncoding';
+import type { ChartType } from './chartType';
+import type { DataProfile } from './dataProfile';
 
 export interface InsightOutput {
   insights: string[];
-  chartType: InsightOutputChartType;
-  echartsSpec: ChartSpec;
+  chartType: ChartType;
+  encoding: ChartEncoding;
+  alternatives: ChartEncoding[];
+  dataProfile: DataProfile;
   confidence: number;
 }

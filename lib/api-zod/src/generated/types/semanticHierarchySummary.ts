@@ -6,4 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ChartSpec { [key: string]: unknown }
+export interface SemanticHierarchySummary {
+  name: string;
+  label: string;
+  levels: string[];
+}

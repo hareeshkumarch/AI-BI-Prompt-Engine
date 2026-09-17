@@ -107,6 +107,191 @@ export const GetSchemaContextResponse = zod.object({
 
 
 /**
+ * @summary Get the semantic model for the connected dataset
+ */
+export const GetSemanticModelResponse = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "baseTable": zod.string(),
+  "engine": zod.string(),
+  "dialect": zod.string(),
+  "fields": zod.array(zod.object({
+  "name": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "table": zod.string(),
+  "role": zod.enum(['DIMENSION', 'MEASURE', 'TIME_DIMENSION', 'IDENTIFIER', 'GEOGRAPHY', 'BOOLEAN', 'TEXT', 'DERIVED_FIELD', 'METRIC']),
+  "semanticType": zod.string(),
+  "defaultAggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']),
+  "allowedAggregations": zod.array(zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none'])),
+  "format": zod.object({
+  "kind": zod.enum(['number', 'currency', 'percent', 'datetime', 'text']),
+  "decimals": zod.number().int(),
+  "compact": zod.boolean(),
+  "currency": zod.string().nullable(),
+  "unit": zod.string().nullable()
+}),
+  "synonyms": zod.array(zod.string()),
+  "geographyLevel": zod.string().nullable()
+})),
+  "metrics": zod.array(zod.object({
+  "name": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "format": zod.object({
+  "kind": zod.enum(['number', 'currency', 'percent', 'datetime', 'text']),
+  "decimals": zod.number().int(),
+  "compact": zod.boolean(),
+  "currency": zod.string().nullable(),
+  "unit": zod.string().nullable()
+})
+})),
+  "hierarchies": zod.array(zod.object({
+  "name": zod.string(),
+  "label": zod.string(),
+  "levels": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * @summary Compile a field selection into SQL, execute it, and return the aggregated result
+ */
+export const RunExploreQueryBody = zod.object({
+  "chartType": zod.string().nullish(),
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})).optional(),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})).optional(),
+  "limit": zod.number().int().optional()
+})
+
+export const RunExploreQueryResponse = zod.object({
+  "sql": zod.string(),
+  "result": zod.object({
+  "columns": zod.array(zod.string()),
+  "rows": zod.array(zod.record(zod.string(), zod.unknown())),
+  "rowCount": zod.number().int(),
+  "truncated": zod.boolean()
+}),
+  "stats": zod.object({
+  "engine": zod.string(),
+  "dialect": zod.string(),
+  "queryTimeMs": zod.number().int(),
+  "databaseTimeMs": zod.number().int(),
+  "rowsReturned": zod.number().int(),
+  "bytesReturned": zod.number().int(),
+  "truncated": zod.boolean(),
+  "cacheHit": zod.boolean()
+}),
+  "encoding": zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.'),
+  "alternatives": zod.array(zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.')),
+  "dataProfile": zod.object({
+  "rowCount": zod.number().int(),
+  "fields": zod.array(zod.object({
+  "name": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "role": zod.enum(['dimension', 'measure', 'key']),
+  "nullRate": zod.number(),
+  "distinctCount": zod.number().int(),
+  "cardinalityRatio": zod.number(),
+  "continuous": zod.boolean(),
+  "monotonic": zod.enum(['increasing', 'decreasing', 'none']),
+  "min": zod.number().nullable(),
+  "max": zod.number().nullable(),
+  "sum": zod.number().nullable(),
+  "temporalGrain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()]),
+  "sampleValues": zod.array(zod.string())
+}).describe('Inferred semantic type and statistics for one result column.')),
+  "measures": zod.array(zod.string()),
+  "dimensions": zod.array(zod.string()),
+  "temporal": zod.array(zod.string()),
+  "signature": zod.string()
+}).describe('The typed schema of a result set, used to decide which charts are valid.'),
+  "issues": zod.array(zod.object({
+  "code": zod.string(),
+  "message": zod.string(),
+  "path": zod.string(),
+  "severity": zod.enum(['error', 'warning'])
+}))
+})
+
+
+/**
  * @summary List recent orchestration runs
  */
 export const ListQueryRunsResponseItem = zod.object({
@@ -131,9 +316,8 @@ export const createQueryRunBodyQuestionMin = 3;
 export const CreateQueryRunBody = zod.object({
   "question": zod.string().min(createQueryRunBodyQuestionMin),
   "connectionId": zod.string(),
-  "dialect": zod.enum(['postgresql', 'mysql', 'snowflake', 'sqlite', 'duckdb']),
   "mode": zod.enum(['analyst', 'sql_only'])
-})
+}).describe('The connected engine owns the SQL dialect; callers do not choose it.')
 
 export const CreateQueryRunResponse = zod.object({
   "id": zod.string(),
@@ -165,8 +349,89 @@ export const CreateQueryRunResponse = zod.object({
 }).nullable(),
   "insight": zod.object({
   "insights": zod.array(zod.string()),
-  "chartType": zod.enum(['line', 'bar', 'area', 'scatter', 'pie', 'kpi_card', 'table']),
-  "echartsSpec": zod.record(zod.string(), zod.unknown()),
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "encoding": zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.'),
+  "alternatives": zod.array(zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.')),
+  "dataProfile": zod.object({
+  "rowCount": zod.number().int(),
+  "fields": zod.array(zod.object({
+  "name": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "role": zod.enum(['dimension', 'measure', 'key']),
+  "nullRate": zod.number(),
+  "distinctCount": zod.number().int(),
+  "cardinalityRatio": zod.number(),
+  "continuous": zod.boolean(),
+  "monotonic": zod.enum(['increasing', 'decreasing', 'none']),
+  "min": zod.number().nullable(),
+  "max": zod.number().nullable(),
+  "sum": zod.number().nullable(),
+  "temporalGrain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()]),
+  "sampleValues": zod.array(zod.string())
+}).describe('Inferred semantic type and statistics for one result column.')),
+  "measures": zod.array(zod.string()),
+  "dimensions": zod.array(zod.string()),
+  "temporal": zod.array(zod.string()),
+  "signature": zod.string()
+}).describe('The typed schema of a result set, used to decide which charts are valid.'),
   "confidence": zod.number()
 }).nullable(),
   "error": zod.string().nullable()
@@ -210,8 +475,89 @@ export const GetQueryRunResponse = zod.object({
 }).nullable(),
   "insight": zod.object({
   "insights": zod.array(zod.string()),
-  "chartType": zod.enum(['line', 'bar', 'area', 'scatter', 'pie', 'kpi_card', 'table']),
-  "echartsSpec": zod.record(zod.string(), zod.unknown()),
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "encoding": zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.'),
+  "alternatives": zod.array(zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.')),
+  "dataProfile": zod.object({
+  "rowCount": zod.number().int(),
+  "fields": zod.array(zod.object({
+  "name": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "role": zod.enum(['dimension', 'measure', 'key']),
+  "nullRate": zod.number(),
+  "distinctCount": zod.number().int(),
+  "cardinalityRatio": zod.number(),
+  "continuous": zod.boolean(),
+  "monotonic": zod.enum(['increasing', 'decreasing', 'none']),
+  "min": zod.number().nullable(),
+  "max": zod.number().nullable(),
+  "sum": zod.number().nullable(),
+  "temporalGrain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()]),
+  "sampleValues": zod.array(zod.string())
+}).describe('Inferred semantic type and statistics for one result column.')),
+  "measures": zod.array(zod.string()),
+  "dimensions": zod.array(zod.string()),
+  "temporal": zod.array(zod.string()),
+  "signature": zod.string()
+}).describe('The typed schema of a result set, used to decide which charts are valid.'),
   "confidence": zod.number()
 }).nullable(),
   "error": zod.string().nullable()
@@ -259,8 +605,89 @@ export const RepairQueryRunResponse = zod.object({
 }).nullable(),
   "insight": zod.object({
   "insights": zod.array(zod.string()),
-  "chartType": zod.enum(['line', 'bar', 'area', 'scatter', 'pie', 'kpi_card', 'table']),
-  "echartsSpec": zod.record(zod.string(), zod.unknown()),
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "encoding": zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.'),
+  "alternatives": zod.array(zod.object({
+  "chartType": zod.enum(['kpi', 'table', 'line', 'multi_line', 'area', 'stacked_area', 'bar', 'bar_horizontal', 'grouped_bar', 'stacked_bar', 'stacked_bar_100', 'pie', 'donut', 'scatter', 'bubble', 'histogram', 'heatmap', 'radar', 'funnel', 'treemap']),
+  "label": zod.string(),
+  "family": zod.enum(['summary', 'trend', 'comparison', 'composition', 'distribution', 'relationship']),
+  "rationale": zod.string(),
+  "x": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "y": zod.array(zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.')),
+  "series": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "size": zod.object({
+  "field": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "grain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()])
+}).describe('One result column bound to an encoding channel.').nullable(),
+  "orientation": zod.enum(['vertical', 'horizontal']),
+  "stack": zod.enum(['none', 'stacked', 'normalized']),
+  "colorJob": zod.enum(['none', 'categorical', 'sequential', 'ordinal']),
+  "score": zod.number()
+}).describe('A chart type with each of its channels bound to a result column.')),
+  "dataProfile": zod.object({
+  "rowCount": zod.number().int(),
+  "fields": zod.array(zod.object({
+  "name": zod.string(),
+  "type": zod.enum(['temporal', 'quantitative', 'nominal', 'ordinal', 'boolean', 'identifier']),
+  "role": zod.enum(['dimension', 'measure', 'key']),
+  "nullRate": zod.number(),
+  "distinctCount": zod.number().int(),
+  "cardinalityRatio": zod.number(),
+  "continuous": zod.boolean(),
+  "monotonic": zod.enum(['increasing', 'decreasing', 'none']),
+  "min": zod.number().nullable(),
+  "max": zod.number().nullable(),
+  "sum": zod.number().nullable(),
+  "temporalGrain": zod.union([zod.enum(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute']),zod.null()]),
+  "sampleValues": zod.array(zod.string())
+}).describe('Inferred semantic type and statistics for one result column.')),
+  "measures": zod.array(zod.string()),
+  "dimensions": zod.array(zod.string()),
+  "temporal": zod.array(zod.string()),
+  "signature": zod.string()
+}).describe('The typed schema of a result set, used to decide which charts are valid.'),
   "confidence": zod.number()
 }).nullable(),
   "error": zod.string().nullable()

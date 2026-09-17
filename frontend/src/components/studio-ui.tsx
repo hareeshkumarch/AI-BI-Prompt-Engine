@@ -1,7 +1,25 @@
-import { AlertTriangle, ArrowUpRight, Check, ChevronDown, Clock3, Database, Loader2, RefreshCw, Search, ShieldCheck, Table2, X } from 'lucide-react';
-import { useState } from 'react';
-import type { PipelineStage, QueryResult, QueryRunSummary, SchemaTable } from '@workspace/api-client-react';
+import { AlertTriangle, ArrowUpRight, Bird, Check, ChevronDown, Clock3, Database, HardDrive, Loader2, RefreshCw, Search, ShieldCheck, Snowflake, Table2, Terminal, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { DataProfile, PipelineStage, QueryResult, QueryRunSummary, SchemaTable } from '@workspace/api-client-react';
 import { Link } from 'wouter';
+
+
+export function dialectIcon(kind: string, size = 16) {
+  if (kind === 'mysql') return <HardDrive size={size} />;
+  if (kind === 'snowflake') return <Snowflake size={size} />;
+  if (kind === 'sqlite') return <Terminal size={size} />;
+  if (kind === 'duckdb') return <Bird size={size} />;
+  return <Database size={size} />;
+}
+
+export function useDebouncedValue<T>(value: T, delayMs = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export function SectionHeading({ eyebrow, title, detail, action }: { eyebrow?: string; title: string; detail?: string; action?: React.ReactNode }) {
   return <div className="mb-5 flex items-end justify-between gap-4"><div>{eyebrow && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.18em] text-primary">{eyebrow}</p>}<h2 className="font-display text-lg font-bold tracking-[-.03em] text-foreground">{title}</h2>{detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}</div>{action}</div>;
@@ -84,10 +102,35 @@ export function ConfidenceRing({ value }: { value: number }) {
   return <div className="relative size-16"><svg viewBox="0 0 52 52" className="-rotate-90"><circle cx="26" cy="26" r="22" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" /><circle cx="26" cy="26" r="22" fill="none" stroke="hsl(var(--primary))" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${dash} ${circumference}`} /></svg><span className="absolute inset-0 grid place-items-center font-display text-sm font-bold">{percent}%</span></div>;
 }
 
-export function MiniChart({ type = 'line' }: { type?: string }) {
-  const bars = [42, 68, 52, 84, 61, 75, 92, 70, 88];
-  if (type === 'bar') return <div className="flex h-36 items-end gap-2 px-3 pb-1">{bars.map((height, index) => <div key={index} className="flex-1 rounded-t-sm bg-primary/75 transition-all hover:bg-primary" style={{ height: `${height}%` }} />)}</div>;
-  return <div className="h-36 px-1"><svg viewBox="0 0 400 140" preserveAspectRatio="none" className="h-full w-full"><path d="M0 114 C 35 110, 48 86, 76 98 S 118 61, 148 79 S 190 35, 216 62 S 258 82, 286 42 S 335 66, 400 18 L400 140 L0 140Z" fill="hsl(var(--primary) / .1)" /><path d="M0 114 C 35 110, 48 86, 76 98 S 118 61, 148 79 S 190 35, 216 62 S 258 82, 286 42 S 335 66, 400 18" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" vectorEffect="non-scaling-stroke" /></svg></div>;
+
+const TYPE_TONE: Record<string, string> = {
+  temporal: 'text-[color:var(--series-3)]',
+  quantitative: 'text-[color:var(--series-1)]',
+  ordinal: 'text-[color:var(--series-4)]',
+  boolean: 'text-[color:var(--series-7)]',
+  nominal: 'text-muted-foreground',
+  identifier: 'text-muted-foreground/70',
+};
+
+export function ResultSchema({ profile }: { profile: DataProfile }) {
+  const dimensionCount = profile.dimensions.length + profile.temporal.length;
+  return <section className="rounded-sm border border-border bg-card p-5" data-testid="result-schema">
+    <SectionHeading eyebrow="Result schema" title="Inferred field types" detail={`Signature ${profile.signature} · ${profile.rowCount.toLocaleString()} rows · ${profile.measures.length} measure${profile.measures.length === 1 ? '' : 's'}, ${dimensionCount} dimension${dimensionCount === 1 ? '' : 's'}`} />
+    <div className="grid gap-2 sm:grid-cols-2">
+      {profile.fields.map((field) => <div key={field.name} className="flex items-start justify-between gap-3 rounded-sm border border-border/70 bg-muted/20 px-3 py-2" data-testid={`schema-field-${field.name}`}>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium">{field.name}</p>
+          <p className="mono mt-0.5 text-[10px] text-muted-foreground">
+            {field.distinctCount.toLocaleString()} distinct
+            {field.temporalGrain ? ` · ${field.temporalGrain}` : ''}
+            {field.nullRate > 0 ? ` · ${Math.round(field.nullRate * 100)}% null` : ''}
+            {field.monotonic !== 'none' ? ` · ${field.monotonic}` : ''}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-sm border border-border bg-card px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${TYPE_TONE[field.type] ?? 'text-muted-foreground'}`}>{field.type}</span>
+      </div>)}
+    </div>
+  </section>;
 }
 
 export function SchemaTableRow({ table }: { table: SchemaTable }) {
@@ -141,7 +184,7 @@ export function RunMeta({ label, value, icon: Icon = Clock3 }: { label: string; 
 }
 
 export function ConnectionMark({ kind }: { kind: string }) {
-  return <span className="grid size-9 place-items-center rounded-sm border border-primary/20 bg-primary/10 text-primary"><Database size={16} /></span>;
+  return <span className="grid size-9 place-items-center rounded-sm border border-primary/20 bg-primary/10 text-primary" title={kind}>{dialectIcon(kind)}</span>;
 }
 
 export function SecurityNote() {

@@ -75,6 +75,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SchemaContext"
+  /studio/model:
+    get:
+      operationId: getSemanticModel
+      tags: [studio]
+      summary: Get the semantic model for the connected dataset
+      responses:
+        "200":
+          description: Semantic model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SemanticModelSummary"
+  /studio/query:
+    post:
+      operationId: runExploreQuery
+      tags: [studio]
+      summary: Compile a field selection into SQL, execute it, and return the aggregated result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExploreQueryInput"
+      responses:
+        "200":
+          description: Aggregated result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExploreQueryResult"
+        "400":
+          description: The selection is not valid or could not be compiled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /studio/runs:
     get:
       operationId: listQueryRuns
@@ -319,9 +355,387 @@ components:
         truncated:
           type: boolean
       required: [columns, rows, rowCount, truncated]
-    ChartSpec:
+    Aggregation:
+      type: string
+      enum: [sum, avg, min, max, count, count_distinct, median, p90, p95, none]
+    FieldRoleName:
+      type: string
+      enum: [DIMENSION, MEASURE, TIME_DIMENSION, IDENTIFIER, GEOGRAPHY, BOOLEAN, TEXT, DERIVED_FIELD, METRIC]
+    FormatRule:
       type: object
-      additionalProperties: true
+      properties:
+        kind:
+          type: string
+          enum: [number, currency, percent, datetime, text]
+        decimals:
+          type: integer
+        compact:
+          type: boolean
+        currency:
+          type: ["string", "null"]
+        unit:
+          type: ["string", "null"]
+      required: [kind, decimals, compact, currency, unit]
+    SemanticFieldSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        table:
+          type: string
+        role:
+          $ref: "#/components/schemas/FieldRoleName"
+        semanticType:
+          type: string
+        defaultAggregation:
+          $ref: "#/components/schemas/Aggregation"
+        allowedAggregations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Aggregation"
+        format:
+          $ref: "#/components/schemas/FormatRule"
+        synonyms:
+          type: array
+          items:
+            type: string
+        geographyLevel:
+          type: ["string", "null"]
+      required:
+        [name, label, description, table, role, semanticType, defaultAggregation, allowedAggregations, format, synonyms, geographyLevel]
+    SemanticMetricSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        format:
+          $ref: "#/components/schemas/FormatRule"
+      required: [name, label, description, format]
+    SemanticHierarchySummary:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        levels:
+          type: array
+          items:
+            type: string
+      required: [name, label, levels]
+    SemanticModelSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        baseTable:
+          type: string
+        engine:
+          type: string
+        dialect:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticFieldSummary"
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticMetricSummary"
+        hierarchies:
+          type: array
+          items:
+            $ref: "#/components/schemas/SemanticHierarchySummary"
+      required: [id, label, description, baseTable, engine, dialect, fields, metrics, hierarchies]
+    ExploreChannel:
+      type: object
+      properties:
+        field:
+          type: string
+        aggregation:
+          $ref: "#/components/schemas/Aggregation"
+        grain:
+          type: ["string", "null"]
+      required: [field]
+    ExploreFilter:
+      type: object
+      properties:
+        field:
+          type: string
+        operator:
+          type: string
+          enum:
+            [eq, neq, gt, gte, lt, lte, between, in, not_in, contains, not_contains, starts_with, ends_with, is_null, is_not_null]
+        values:
+          type: array
+          items: {}
+      required: [field, operator, values]
+    ExploreSort:
+      type: object
+      properties:
+        field:
+          type: string
+        direction:
+          type: string
+          enum: [asc, desc]
+      required: [field, direction]
+    ExploreQueryInput:
+      type: object
+      properties:
+        chartType:
+          type: ["string", "null"]
+        dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreChannel"
+        measures:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreChannel"
+        filters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreFilter"
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreSort"
+        limit:
+          type: integer
+      required: [dimensions, measures]
+    ExecutionStats:
+      type: object
+      properties:
+        engine:
+          type: string
+        dialect:
+          type: string
+        queryTimeMs:
+          type: integer
+        databaseTimeMs:
+          type: integer
+        rowsReturned:
+          type: integer
+        bytesReturned:
+          type: integer
+        truncated:
+          type: boolean
+        cacheHit:
+          type: boolean
+      required:
+        [engine, dialect, queryTimeMs, databaseTimeMs, rowsReturned, bytesReturned, truncated, cacheHit]
+    ValidationIssue:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        severity:
+          type: string
+          enum: [error, warning]
+      required: [code, message, path, severity]
+    ExploreQueryResult:
+      type: object
+      properties:
+        sql:
+          type: string
+        result:
+          $ref: "#/components/schemas/QueryResult"
+        stats:
+          $ref: "#/components/schemas/ExecutionStats"
+        encoding:
+          $ref: "#/components/schemas/ChartEncoding"
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartEncoding"
+        dataProfile:
+          $ref: "#/components/schemas/DataProfile"
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+      required: [sql, result, stats, encoding, alternatives, dataProfile, issues]
+    FieldType:
+      type: string
+      enum: [temporal, quantitative, nominal, ordinal, boolean, identifier]
+    FieldRole:
+      type: string
+      enum: [dimension, measure, key]
+    TemporalGrain:
+      type: string
+      enum: [year, quarter, month, week, day, hour, minute]
+    FieldProfile:
+      type: object
+      description: Inferred semantic type and statistics for one result column.
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        role:
+          $ref: "#/components/schemas/FieldRole"
+        nullRate:
+          type: number
+        distinctCount:
+          type: integer
+        cardinalityRatio:
+          type: number
+        continuous:
+          type: boolean
+        monotonic:
+          type: string
+          enum: [increasing, decreasing, none]
+        min:
+          type: ["number", "null"]
+        max:
+          type: ["number", "null"]
+        sum:
+          type: ["number", "null"]
+        temporalGrain:
+          oneOf:
+            - $ref: "#/components/schemas/TemporalGrain"
+            - type: "null"
+        sampleValues:
+          type: array
+          items:
+            type: string
+      required:
+        [
+          name,
+          type,
+          role,
+          nullRate,
+          distinctCount,
+          cardinalityRatio,
+          continuous,
+          monotonic,
+          min,
+          max,
+          sum,
+          temporalGrain,
+          sampleValues,
+        ]
+    DataProfile:
+      type: object
+      description: The typed schema of a result set, used to decide which charts are valid.
+      properties:
+        rowCount:
+          type: integer
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldProfile"
+        measures:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        temporal:
+          type: array
+          items:
+            type: string
+        signature:
+          type: string
+      required: [rowCount, fields, measures, dimensions, temporal, signature]
+    ChartType:
+      type: string
+      enum:
+        [
+          kpi,
+          table,
+          line,
+          multi_line,
+          area,
+          stacked_area,
+          bar,
+          bar_horizontal,
+          grouped_bar,
+          stacked_bar,
+          stacked_bar_100,
+          pie,
+          donut,
+          scatter,
+          bubble,
+          histogram,
+          heatmap,
+          radar,
+          funnel,
+          treemap,
+        ]
+    FieldRef:
+      type: object
+      description: One result column bound to an encoding channel.
+      properties:
+        field:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        grain:
+          oneOf:
+            - $ref: "#/components/schemas/TemporalGrain"
+            - type: "null"
+      required: [field, type, grain]
+    ChartEncoding:
+      type: object
+      description: A chart type with each of its channels bound to a result column.
+      properties:
+        chartType:
+          $ref: "#/components/schemas/ChartType"
+        label:
+          type: string
+        family:
+          type: string
+          enum: [summary, trend, comparison, composition, distribution, relationship]
+        rationale:
+          type: string
+        x:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        y:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldRef"
+        series:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        size:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        orientation:
+          type: string
+          enum: [vertical, horizontal]
+        stack:
+          type: string
+          enum: [none, stacked, normalized]
+        colorJob:
+          type: string
+          enum: [none, categorical, sequential, ordinal]
+        score:
+          type: number
+      required:
+        [chartType, label, family, rationale, x, y, series, size, orientation, stack, colorJob, score]
     InsightOutput:
       type: object
       properties:
@@ -330,28 +744,31 @@ components:
           items:
             type: string
         chartType:
-          type: string
-          enum: [line, bar, area, scatter, pie, kpi_card, table]
-        echartsSpec:
-          $ref: "#/components/schemas/ChartSpec"
+          $ref: "#/components/schemas/ChartType"
+        encoding:
+          $ref: "#/components/schemas/ChartEncoding"
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartEncoding"
+        dataProfile:
+          $ref: "#/components/schemas/DataProfile"
         confidence:
           type: number
-      required: [insights, chartType, echartsSpec, confidence]
+      required: [insights, chartType, encoding, alternatives, dataProfile, confidence]
     QueryRunInput:
       type: object
+      description: The connected engine owns the SQL dialect; callers do not choose it.
       properties:
         question:
           type: string
           minLength: 3
         connectionId:
           type: string
-        dialect:
-          type: string
-          enum: [postgresql, mysql, snowflake, sqlite, duckdb]
         mode:
           type: string
           enum: [analyst, sql_only]
-      required: [question, connectionId, dialect, mode]
+      required: [question, connectionId, mode]
     RepairRunInput:
       type: object
       properties:

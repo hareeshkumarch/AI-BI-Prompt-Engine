@@ -5,13 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { QueryRunInputDialect } from './queryRunInputDialect';
 import type { QueryRunInputMode } from './queryRunInputMode';
 
+/**
+ * The connected engine owns the SQL dialect; callers do not choose it.
+ */
 export interface QueryRunInput {
   /** @minLength 3 */
   question: string;
   connectionId: string;
-  dialect: QueryRunInputDialect;
   mode: QueryRunInputMode;
 }

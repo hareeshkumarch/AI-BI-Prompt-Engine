@@ -1,11 +1,13 @@
-import { Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
+import { Compass, Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useGetStudioOverview } from '@workspace/api-client-react';
 
 type StudioShellProps = { children: React.ReactNode };
 
 const navItems = [
   { href: '/', label: 'Workspace', icon: LayoutDashboard },
+  { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/schema', label: 'Schema context', icon: GitBranch },
   { href: '/connections', label: 'Connections', icon: Network },
 ];
@@ -13,6 +15,8 @@ const navItems = [
 export function StudioShell({ children }: StudioShellProps) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: overview } = useGetStudioOverview();
+  const degraded = overview?.systemStatus === 'degraded';
   const current = navItems.find((item) => item.href === location)?.label ?? (location.startsWith('/runs/') ? 'Run detail' : 'Workspace');
 
   return (
@@ -59,8 +63,8 @@ export function StudioShell({ children }: StudioShellProps) {
         <div className="mt-auto space-y-4 border-t border-sidebar-border p-4">
           <div className="rounded-sm border border-sidebar-border bg-sidebar-accent/50 p-3">
             <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[.16em] text-sidebar-foreground/45"><span className="size-1.5 rounded-full bg-sidebar-primary" /> Live system</div>
-            <p className="text-xs text-sidebar-foreground/80">Orchestration pipeline ready</p>
-            <div className="mt-3 flex items-center justify-between text-[10px] mono text-sidebar-foreground/45"><span>REGION</span><span>us-east-1</span></div>
+            <p className="text-xs text-sidebar-foreground/80">{degraded ? 'Orchestration pipeline degraded' : 'Orchestration pipeline ready'}</p>
+            <div className="mt-3 flex items-center justify-between text-[10px] mono text-sidebar-foreground/45"><span>AVG LATENCY</span><span>{overview ? `${overview.averageLatencyMs}ms` : '—'}</span></div>
           </div>
           <button type="button" className="flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground" data-testid="button-settings">
             <Settings2 size={16} /> Workspace settings <PanelLeft size={14} className="ml-auto rotate-180 opacity-40" />
@@ -72,7 +76,7 @@ export function StudioShell({ children }: StudioShellProps) {
       <main className="min-h-[100dvh] md:pl-64">
         <div className="hidden h-16 items-center justify-between border-b border-border bg-card/70 px-8 md:flex">
           <div className="flex items-center gap-3 text-sm"><span className="text-muted-foreground">Studio</span><span className="text-border">/</span><span className="font-medium">{current}</span></div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground"><span className="mono">v0.8.4</span><span className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-primary" /> All systems nominal</span></div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground"><span className="mono">{overview ? `${overview.tableCount} tables · ${overview.queryCount} runs` : '—'}</span><span className="flex items-center gap-2"><span className={`size-1.5 rounded-full ${degraded ? 'bg-accent' : 'bg-primary'}`} />{overview ? (degraded ? 'Degraded performance' : 'All systems nominal') : 'Checking status…'}</span></div>
         </div>
         <div className="pt-14 md:pt-0">{children}</div>
       </main>

@@ -3,8 +3,16 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { errorHandler, notFoundHandler } from "./middlewares/error-handler";
+
+const allowedOrigins = (process.env["CORS_ORIGIN"] ?? "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const app: Express = express();
+
+app.disable("x-powered-by");
 
 app.use(
   pinoHttp({
@@ -25,10 +33,13 @@ app.use(
     },
   }),
 );
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: allowedOrigins.includes("*") ? true : allowedOrigins }));
+app.use(express.json({ limit: "256kb" }));
+app.use(express.urlencoded({ extended: true, limit: "256kb" }));
 
 app.use("/api", router);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

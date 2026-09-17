@@ -4,8 +4,12 @@ import {
   GetQueryRunParams,
   GetSchemaContextQueryParams,
   RepairQueryRunBody,
-  RepairQueryRunParams,
+  RunExploreQueryBody,
 } from "@workspace/api-zod";
+import { describeModel, ExploreError, runExploreQuery } from "../domain/semantic/explore-service";
+import { executionErrorStatus } from "../domain/execution/query-service";
+import { QueryExecutionError } from "../domain/execution/types";
+import { QueryCompileError } from "../domain/semantic/query-plan";
 import {
   executeRun,
   getConnections,
@@ -33,6 +37,34 @@ router.get("/studio/schema-context", (req, res) => {
   return res.json(getContext("", "postgresql", table, search));
 });
 
+router.get("/studio/model", (_req, res) => {
+  res.json(describeModel());
+});
+
+router.post("/studio/query", async (req, res) => {
+  const parsed = RunExploreQueryBody.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid query selection.", code: "INVALID_BODY" });
+
+  const controller = new AbortController();
+  req.on("close", () => { if (!res.writableEnded) controller.abort(); });
+
+  try {
+    const result = await runExploreQuery(parsed.data as never, { signal: controller.signal });
+    return res.json(result);
+  } catch (error) {
+    if (error instanceof ExploreError) {
+      return res.status(400).json({ error: error.message, code: error.code, issues: error.issues });
+    }
+    if (error instanceof QueryCompileError) {
+      return res.status(400).json({ error: error.message, code: error.code });
+    }
+    if (error instanceof QueryExecutionError) {
+      return res.status(executionErrorStatus(error)).json({ error: error.message, code: error.code });
+    }
+    throw error;
+  }
+});
+
 router.get("/studio/runs", (_req, res) => {
   res.json(listRuns());
 });
@@ -40,7 +72,9 @@ router.get("/studio/runs", (_req, res) => {
 router.post("/studio/runs", async (req, res) => {
   const parsed = CreateQueryRunBody.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Invalid query run input.", code: "INVALID_BODY" });
-  const run = await executeRun(parsed.data);
+  const controller = new AbortController();
+  req.on("close", () => { if (!res.writableEnded) controller.abort(); });
+  const run = await executeRun(parsed.data, parsed.data.question, undefined, controller.signal);
   return res.status(201).json(run);
 });
 

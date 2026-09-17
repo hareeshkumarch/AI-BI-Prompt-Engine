@@ -23,6 +23,11 @@ async function buildAll() {
     logLevel: "info",
     external: [
       "*.node",
+      "@duckdb/node-api",
+      "@duckdb/node-bindings",
+      "@duckdb/node-bindings-*",
+      "pg",
+      "pg-native",
       "sharp",
       "better-sqlite3",
       "sqlite3",

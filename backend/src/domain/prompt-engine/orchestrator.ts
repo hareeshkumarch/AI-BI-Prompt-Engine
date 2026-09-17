@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import { demoConnection, schemaCatalog } from "./catalog";
 import { contextualizeSchema } from "./schema-contextualizer";
 import { enforceReadOnlySql, UnsafeSqlError } from "./sql-guardrails";
-import { generateSql, synthesizeInsight } from "./llm-provider";
+import { generateSql } from "./llm-provider";
+import { synthesizeInsight } from "./insight-synthesizer";
+import { engineDialect, runSql } from "../execution/query-service";
+import { QueryExecutionError } from "../execution/types";
 import type {
   DataConnection,
   QueryResult,
@@ -13,29 +16,23 @@ import type {
   SqlDialect,
 } from "./types";
 
+const MAX_RETAINED_RUNS = 200;
+
 const runs = new Map<string, QueryRun>();
 
-const demoRows = {
-  trend: [
-    { month: "2026-01", revenue: 384200 },
-    { month: "2026-02", revenue: 421900 },
-    { month: "2026-03", revenue: 467500 },
-    { month: "2026-04", revenue: 492800 },
-    { month: "2026-05", revenue: 538400 },
-    { month: "2026-06", revenue: 581200 },
-  ],
-  customers: [
-    { company_name: "Acme Labs", total_spend: 218400 },
-    { company_name: "Trellis Health", total_spend: 196200 },
-    { company_name: "Summit Retail", total_spend: 174800 },
-    { company_name: "Kite Systems", total_spend: 158900 },
-    { company_name: "Morrow Finance", total_spend: 143700 },
-  ],
-  kpi: [{ revenue: 2886000, order_count: 184203 }],
-} satisfies Record<string, Record<string, unknown>[]>;
+function storeRun(run: QueryRun) {
+  runs.delete(run.id);
+  runs.set(run.id, run);
+  while (runs.size > MAX_RETAINED_RUNS) {
+    const oldest = runs.keys().next();
+    if (oldest.done) break;
+    runs.delete(oldest.value);
+  }
+  return run;
+}
 
 export function getConnections(): DataConnection[] {
-  return [demoConnection];
+  return [{ ...demoConnection, kind: engineDialect() }];
 }
 
 export function getContext(
@@ -45,17 +42,6 @@ export function getContext(
   search?: string,
 ): SchemaContext {
   return contextualizeSchema(question, dialect, requestedTable, search);
-}
-
-function resultFor(question: string, sql: string): QueryResult {
-  const normalized = `${question} ${sql}`.toLowerCase();
-  const rows = normalized.includes("company_name") || normalized.includes("customer") ? demoRows.customers : normalized.includes("month") || normalized.includes("date_trunc") ? demoRows.trend : demoRows.kpi;
-  return {
-    columns: Object.keys(rows[0] ?? {}),
-    rows,
-    rowCount: rows.length,
-    truncated: false,
-  };
 }
 
 function stage(
@@ -68,9 +54,14 @@ function stage(
   return { id, label, status, detail, durationMs };
 }
 
-export async function executeRun(input: QueryRunInput, questionOverride = input.question): Promise<QueryRun> {
+export async function executeRun(
+  input: QueryRunInput,
+  questionOverride = input.question,
+  runId?: string,
+  signal?: AbortSignal,
+): Promise<QueryRun> {
   const started = Date.now();
-  const id = randomUUID();
+  const id = runId ?? randomUUID();
   const stages: QueryRun["stages"] = [
     stage("contextualize", "Schema contextualizer", "completed", "Selected relevant tables and pruned metadata to the prompt budget.", 24),
     stage("generate_sql", "Text-to-SQL", "running", "Resolving metric, grain, and dialect.", 0),
@@ -79,7 +70,8 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
     stage("repair", "Self-healing retry", "skipped", "No repair required.", 0),
     stage("synthesize", "Insight synthesis", "queued", "Building declarative visualization output.", 0),
   ];
-  const context = getContext(questionOverride, input.dialect);
+  const dialect = engineDialect();
+  const context = getContext(questionOverride, dialect);
   const generated = await generateSql(questionOverride, context);
   stages[1] = stage("generate_sql", "Text-to-SQL", generated.clarification ? "failed" : "completed", generated.clarification ?? "Generated a bounded SQL statement.", Date.now() - started);
   if (generated.clarification) {
@@ -92,7 +84,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       createdAt: new Date().toISOString(),
       durationMs: Date.now() - started,
       connectionId: input.connectionId,
-      dialect: input.dialect,
+      dialect,
       stages: stages.map((item, index) => index > 1 ? { ...item, status: "skipped" } : item),
       targetedTables: [],
       sql: "",
@@ -102,17 +94,28 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight: null,
       error: null,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   }
 
   try {
-    const sql = enforceReadOnlySql(generated.sql, input.dialect);
+    const sql = enforceReadOnlySql(generated.sql, dialect);
     stages[2] = stage("validate", "Policy guardrails", "completed", "SELECT-only, single-statement, dialect-compatible, LIMIT <= 500.", 8);
-    const result = resultFor(questionOverride, sql);
-    stages[3] = stage("execute", "Query execution", "completed", `Returned ${result.rowCount} rows from the bounded result set.`, 34);
-    const insight = input.mode === "sql_only" ? null : synthesizeInsight(questionOverride, result);
-    stages[5] = stage("synthesize", "Insight synthesis", insight ? "completed" : "skipped", insight ? "Generated data-driven insights and an ECharts specification." : "SQL-only mode selected.", 18);
+    const executed = await runSql(sql, { signal });
+    const result: QueryResult = {
+      columns: executed.columns.map((column) => column.name),
+      rows: executed.rows,
+      rowCount: executed.rowCount,
+      truncated: executed.truncated,
+    };
+    stages[3] = stage(
+      "execute",
+      "Query execution",
+      "completed",
+      `Aggregated on ${executed.stats.engine} in ${executed.stats.databaseTimeMs}ms; ${executed.rowCount} rows returned.`,
+      executed.stats.queryTimeMs,
+    );
+    const insight = input.mode === "sql_only" ? null : synthesizeInsight(result);
+    stages[5] = stage("synthesize", "Insight synthesis", insight ? "completed" : "skipped", insight ? `Profiled ${result.columns.length} fields and mapped them to a ${insight?.chartType ?? "table"} encoding.` : "SQL-only mode selected.", 18);
     const run: QueryRun = {
       id,
       question: questionOverride,
@@ -122,7 +125,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       createdAt: new Date().toISOString(),
       durationMs: Date.now() - started,
       connectionId: input.connectionId,
-      dialect: input.dialect,
+      dialect,
       stages,
       targetedTables: generated.targetedTables,
       sql,
@@ -132,12 +135,16 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight,
       error: null,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   } catch (error) {
-    const message = error instanceof UnsafeSqlError ? error.message : "Query execution failed.";
-    stages[2] = stage("validate", "Policy guardrails", "failed", message, 8);
-    stages[3] = stage("execute", "Query execution", "failed", "Execution was blocked before reaching the database.", 0);
+    const blocked = error instanceof UnsafeSqlError;
+    const message = blocked
+      ? error.message
+      : error instanceof QueryExecutionError
+        ? error.message
+        : "Query execution failed.";
+    stages[2] = stage("validate", "Policy guardrails", blocked ? "failed" : "completed", blocked ? message : "SELECT-only, single-statement, dialect-compatible, LIMIT <= 500.", 8);
+    stages[3] = stage("execute", "Query execution", blocked ? "skipped" : "failed", blocked ? "Execution was blocked before reaching the database." : message, 0);
     const run: QueryRun = {
       id,
       question: questionOverride,
@@ -147,7 +154,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       createdAt: new Date().toISOString(),
       durationMs: Date.now() - started,
       connectionId: input.connectionId,
-      dialect: input.dialect,
+      dialect,
       stages,
       targetedTables: generated.targetedTables,
       sql: generated.sql,
@@ -157,8 +164,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight: null,
       error: message,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   }
 }
 
@@ -176,12 +182,12 @@ export async function repairRun(id: string, input: RepairRunInput) {
   const current = runs.get(id);
   if (!current) return undefined;
   const rerun = await executeRun(
-    { question: current.question, connectionId: current.connectionId, dialect: current.dialect as SqlDialect, mode: "analyst" },
+    { question: current.question, connectionId: current.connectionId, mode: "analyst" },
     `${current.question}. ${input.instruction}`,
+    id,
   );
   rerun.stages = rerun.stages.map((item) => item.id === "repair" ? { ...item, status: "completed", detail: "Applied the repair instruction and re-ran validation.", durationMs: 17 } : item);
-  runs.set(id, { ...rerun, id });
-  return runs.get(id);
+  return storeRun(rerun);
 }
 
 export function getOverview() {

@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { ConnectionsPage, RunDetailPage, SchemaPage, WorkspacePage } from '@/pages/studio-pages';
+import { ExplorePage } from '@/pages/explore-page';
 import {
   Route,
   Switch,
@@ -22,6 +23,7 @@ function Router() {
         <Switch>
           <Route path="/" component={WorkspacePage} />
           <Route path="/runs/:runId" component={RunDetailPage} />
+          <Route path="/explore" component={ExplorePage} />
           <Route path="/schema" component={SchemaPage} />
           <Route path="/connections" component={ConnectionsPage} />
           <Route component={NotFound} />

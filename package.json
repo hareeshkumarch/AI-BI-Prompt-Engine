@@ -8,7 +8,10 @@
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./frontend\" --filter \"./backend\" --filter \"./scripts\" --if-present run typecheck",
-    "codegen": "pnpm --filter @workspace/api-spec run codegen"
+    "codegen": "pnpm --filter @workspace/api-spec run codegen",
+    "test": "pnpm -r --if-present run test",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,yaml,yml,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,yaml,yml,css}\""
   },
   "private": true,
   "devDependencies": {
