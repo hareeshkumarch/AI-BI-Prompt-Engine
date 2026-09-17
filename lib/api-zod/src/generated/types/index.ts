@@ -6,17 +6,27 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './chartSpec';
+export * from './chartEncoding';
+export * from './chartEncodingColorJob';
+export * from './chartEncodingFamily';
+export * from './chartEncodingOrientation';
+export * from './chartEncodingStack';
+export * from './chartType';
 export * from './columnMetric';
 export * from './dataConnection';
 export * from './dataConnectionKind';
 export * from './dataConnectionStatus';
+export * from './dataProfile';
 export * from './errorResponse';
+export * from './fieldProfile';
+export * from './fieldProfileMonotonic';
+export * from './fieldRef';
+export * from './fieldRole';
+export * from './fieldType';
 export * from './foreignKey';
 export * from './getSchemaContextParams';
 export * from './healthStatus';
 export * from './insightOutput';
-export * from './insightOutputChartType';
 export * from './pipelineStage';
 export * from './pipelineStageId';
 export * from './pipelineStageStatus';
@@ -35,3 +45,4 @@ export * from './schemaContext';
 export * from './schemaTable';
 export * from './studioOverview';
 export * from './studioOverviewSystemStatus';
+export * from './temporalGrain';

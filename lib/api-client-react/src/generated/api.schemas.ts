@@ -138,25 +138,184 @@ export interface QueryResult {
   truncated: boolean;
 }
 
-export interface ChartSpec { [key: string]: unknown }
-
-export type InsightOutputChartType = typeof InsightOutputChartType[keyof typeof InsightOutputChartType];
+export type FieldType = typeof FieldType[keyof typeof FieldType];
 
 
-export const InsightOutputChartType = {
-  line: 'line',
-  bar: 'bar',
-  area: 'area',
-  scatter: 'scatter',
-  pie: 'pie',
-  kpi_card: 'kpi_card',
-  table: 'table',
+export const FieldType = {
+  temporal: 'temporal',
+  quantitative: 'quantitative',
+  nominal: 'nominal',
+  ordinal: 'ordinal',
+  boolean: 'boolean',
+  identifier: 'identifier',
 } as const;
+
+export type FieldRole = typeof FieldRole[keyof typeof FieldRole];
+
+
+export const FieldRole = {
+  dimension: 'dimension',
+  measure: 'measure',
+  key: 'key',
+} as const;
+
+export type TemporalGrain = typeof TemporalGrain[keyof typeof TemporalGrain];
+
+
+export const TemporalGrain = {
+  year: 'year',
+  quarter: 'quarter',
+  month: 'month',
+  week: 'week',
+  day: 'day',
+  hour: 'hour',
+  minute: 'minute',
+} as const;
+
+export type FieldProfileMonotonic = typeof FieldProfileMonotonic[keyof typeof FieldProfileMonotonic];
+
+
+export const FieldProfileMonotonic = {
+  increasing: 'increasing',
+  decreasing: 'decreasing',
+  none: 'none',
+} as const;
+
+/**
+ * Inferred semantic type and statistics for one result column.
+ */
+export interface FieldProfile {
+  name: string;
+  type: FieldType;
+  role: FieldRole;
+  nullRate: number;
+  distinctCount: number;
+  cardinalityRatio: number;
+  continuous: boolean;
+  monotonic: FieldProfileMonotonic;
+  /** @nullable */
+  min: number | null;
+  /** @nullable */
+  max: number | null;
+  /** @nullable */
+  sum: number | null;
+  temporalGrain: TemporalGrain | null;
+  sampleValues: string[];
+}
+
+/**
+ * The typed schema of a result set, used to decide which charts are valid.
+ */
+export interface DataProfile {
+  rowCount: number;
+  fields: FieldProfile[];
+  measures: string[];
+  dimensions: string[];
+  temporal: string[];
+  signature: string;
+}
+
+export type ChartType = typeof ChartType[keyof typeof ChartType];
+
+
+export const ChartType = {
+  kpi: 'kpi',
+  table: 'table',
+  line: 'line',
+  multi_line: 'multi_line',
+  area: 'area',
+  stacked_area: 'stacked_area',
+  bar: 'bar',
+  bar_horizontal: 'bar_horizontal',
+  grouped_bar: 'grouped_bar',
+  stacked_bar: 'stacked_bar',
+  stacked_bar_100: 'stacked_bar_100',
+  pie: 'pie',
+  donut: 'donut',
+  scatter: 'scatter',
+  bubble: 'bubble',
+  histogram: 'histogram',
+  heatmap: 'heatmap',
+  radar: 'radar',
+  funnel: 'funnel',
+  treemap: 'treemap',
+} as const;
+
+/**
+ * One result column bound to an encoding channel.
+ */
+export interface FieldRef {
+  field: string;
+  type: FieldType;
+  grain: TemporalGrain | null;
+}
+
+export type ChartEncodingFamily = typeof ChartEncodingFamily[keyof typeof ChartEncodingFamily];
+
+
+export const ChartEncodingFamily = {
+  summary: 'summary',
+  trend: 'trend',
+  comparison: 'comparison',
+  composition: 'composition',
+  distribution: 'distribution',
+  relationship: 'relationship',
+} as const;
+
+export type ChartEncodingOrientation = typeof ChartEncodingOrientation[keyof typeof ChartEncodingOrientation];
+
+
+export const ChartEncodingOrientation = {
+  vertical: 'vertical',
+  horizontal: 'horizontal',
+} as const;
+
+export type ChartEncodingStack = typeof ChartEncodingStack[keyof typeof ChartEncodingStack];
+
+
+export const ChartEncodingStack = {
+  none: 'none',
+  stacked: 'stacked',
+  normalized: 'normalized',
+} as const;
+
+export type ChartEncodingColorJob = typeof ChartEncodingColorJob[keyof typeof ChartEncodingColorJob];
+
+
+export const ChartEncodingColorJob = {
+  none: 'none',
+  categorical: 'categorical',
+  sequential: 'sequential',
+  ordinal: 'ordinal',
+} as const;
+
+/**
+ * A chart type with each of its channels bound to a result column.
+ */
+export interface ChartEncoding {
+  chartType: ChartType;
+  label: string;
+  family: ChartEncodingFamily;
+  rationale: string;
+  /** @nullable */
+  x: FieldRef | null;
+  y: FieldRef[];
+  /** @nullable */
+  series: FieldRef | null;
+  /** @nullable */
+  size: FieldRef | null;
+  orientation: ChartEncodingOrientation;
+  stack: ChartEncodingStack;
+  colorJob: ChartEncodingColorJob;
+  score: number;
+}
 
 export interface InsightOutput {
   insights: string[];
-  chartType: InsightOutputChartType;
-  echartsSpec: ChartSpec;
+  chartType: ChartType;
+  encoding: ChartEncoding;
+  alternatives: ChartEncoding[];
+  dataProfile: DataProfile;
   confidence: number;
 }
 

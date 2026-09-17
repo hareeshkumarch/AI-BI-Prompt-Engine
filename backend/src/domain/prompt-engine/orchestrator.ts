@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { demoConnection, schemaCatalog } from "./catalog";
 import { contextualizeSchema } from "./schema-contextualizer";
 import { enforceReadOnlySql, UnsafeSqlError } from "./sql-guardrails";
-import { generateSql, synthesizeInsight } from "./llm-provider";
+import { generateSql } from "./llm-provider";
+import { synthesizeInsight } from "./insight-synthesizer";
 import type {
   DataConnection,
   QueryResult,
@@ -123,8 +124,8 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
     stages[2] = stage("validate", "Policy guardrails", "completed", "SELECT-only, single-statement, dialect-compatible, LIMIT <= 500.", 8);
     const result = resultFor(questionOverride, sql);
     stages[3] = stage("execute", "Query execution", "completed", `Returned ${result.rowCount} rows from the bounded result set.`, 34);
-    const insight = input.mode === "sql_only" ? null : synthesizeInsight(questionOverride, result);
-    stages[5] = stage("synthesize", "Insight synthesis", insight ? "completed" : "skipped", insight ? "Generated data-driven insights and an ECharts specification." : "SQL-only mode selected.", 18);
+    const insight = input.mode === "sql_only" ? null : synthesizeInsight(result);
+    stages[5] = stage("synthesize", "Insight synthesis", insight ? "completed" : "skipped", insight ? `Profiled ${result.columns.length} fields and mapped them to a ${insight?.chartType ?? "table"} encoding.` : "SQL-only mode selected.", 18);
     const run: QueryRun = {
       id,
       question: questionOverride,

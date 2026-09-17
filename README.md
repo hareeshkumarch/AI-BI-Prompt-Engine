@@ -9,7 +9,9 @@ An AI-native Business Intelligence workspace that turns plain-English questions 
 - **Schema Contextualization** — Schema context is ranked and pruned for optimal prompt construction
 - **Orchestration Pipeline** — Full stage-by-stage trace from question → SQL → results → visualization
 - **AI Provider Flexibility** — Supports OpenAI with a deterministic local fallback for demo/testing
-- **Interactive Visualizations** — Insight charts rendered from the query result with Recharts
+- **Typed Result Schema** — Every result column is profiled into a semantic type (temporal / quantitative / nominal / ordinal / boolean / identifier) with cardinality, null rate, monotonicity and temporal grain
+- **Auto-Mapping Engine** — A declarative catalog of 20 chart types, each stating the field roles it requires; the mapper binds columns to encoding channels, scores the candidates and returns a primary chart plus every viable alternative
+- **Interactive Visualizations** — Charts rendered from the server-side encoding with Recharts, switchable in place between the alternatives the data supports
 
 > **Note on execution.** The `execute` stage currently returns a bounded demo result set from the
 > in-memory catalog rather than issuing the generated SQL against a live warehouse. Everything
@@ -34,12 +36,16 @@ AI-BI-Prompt-Engine/
 │   │   ├── domain/          # Business logic
 │   │   │   └── prompt-engine/
 │   │   │       ├── catalog.ts              # Schema catalog
+│   │   │       ├── chart-catalog.ts         # 20 chart types + data requirements
+│   │   │       ├── chart-mapper.ts          # Column → encoding-channel binding
+│   │   │       ├── data-profile.ts          # Semantic type inference per column
+│   │   │       ├── insight-synthesizer.ts   # Profile → insights + chart choice
 │   │   │       ├── llm-provider.ts         # AI provider adapter
 │   │   │       ├── orchestrator.ts         # Pipeline orchestration
 │   │   │       ├── schema-contextualizer.ts
 │   │   │       ├── sql-guardrails.ts       # SQL safety validation
 │   │   │       ├── types.ts
-│   │   │       └── __tests__/              # Guardrail + orchestrator tests (Vitest)
+│   │   │       └── __tests__/              # Guardrail, profiler, mapper + orchestrator tests
 │   │   ├── routes/          # API routes
 │   │   ├── middlewares/      # JSON 404 + error handlers
 │   │   └── lib/             # Shared utilities (logger, etc.)
@@ -56,6 +62,44 @@ AI-BI-Prompt-Engine/
 ├── pnpm-workspace.yaml      # pnpm workspace configuration
 └── tsconfig.base.json       # Shared TypeScript config
 ```
+
+## 📊 Chart selection
+
+Chart choice is **derived from the result set, never guessed**. Three stages:
+
+1. **Profile** (`data-profile.ts`) — each column gets a semantic type and statistics:
+
+   | Type | Meaning | Detected from |
+   | ---- | ------- | ------------- |
+   | `temporal` | a point in time | ISO date patterns (`2026-01`, `2026-Q1`, `2026-W03`, `2026-03-02`), `Date` values, or a year-named integer |
+   | `quantitative` | a measure | every non-null value parses as a finite number |
+   | `nominal` | unordered category | text with no ordering signal |
+   | `ordinal` | ordered category | a known vocabulary (sizes, tiers, weekdays) or an ordering-shaped name (`stage`, `tier`, `band`) |
+   | `boolean` | two-state flag | `true`/`false`/`yes`/`no` |
+   | `identifier` | a key, not a measure | near-unique values under an id-shaped name — kept out of the measure pool |
+
+2. **Match** (`chart-catalog.ts`) — each chart declares what it needs: how many axis fields, how many of those may be temporal, how many measures, row and category ceilings, and an optional predicate (a funnel requires an ordered stage field *and* a monotonically decreasing measure; a pie requires non-negative values and at most six slices).
+
+3. **Bind and rank** (`chart-mapper.ts`) — every chart whose requirements are met gets its columns bound to encoding channels (`x`, `y`, `series`, `size`), then scored. Effectiveness adjustments run here: long category labels push a bar horizontal, many categories favour a treemap, a dense time axis favours a line.
+
+The pipeline returns the winning encoding **plus every runner-up**, so the UI can offer an in-place switcher that only ever lists charts the data actually supports.
+
+### Supported chart types
+
+| Family | Charts |
+| ------ | ------ |
+| Summary | `kpi`, `table` |
+| Trend | `line`, `multi_line`, `area` |
+| Comparison | `bar`, `bar_horizontal`, `grouped_bar`, `heatmap`, `radar` |
+| Composition | `stacked_area`, `stacked_bar`, `stacked_bar_100`, `pie`, `donut`, `funnel`, `treemap` |
+| Distribution | `histogram` |
+| Relationship | `scatter`, `bubble` |
+
+Multi-series charts take their series either from extra measure columns (wide format) or from a second categorical column, which the renderer pivots (long format).
+
+### Chart colour
+
+Series colours come from eight fixed slots (`--series-1` … `--series-8` in `frontend/src/index.css`), assigned in order and never cycled. The order is the colourblind-safety mechanism: it was selected by search and validated in both light and dark modes (worst adjacent CVD ΔE 13.0 against a target of 8; worst normal-vision ΔE 19.3 against a floor of 15). Magnitude encodings — heatmap cells, treemap tiles, funnel stages — use the single-hue `--ramp-1` … `--ramp-5` ramp instead, with `--ramp-N-ink` giving a legible text colour on each step. **Re-run the palette validator before changing any of these values.**
 
 ## 🛠️ Tech Stack
 

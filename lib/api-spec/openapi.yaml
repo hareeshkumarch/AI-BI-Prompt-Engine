@@ -319,9 +319,171 @@ components:
         truncated:
           type: boolean
       required: [columns, rows, rowCount, truncated]
-    ChartSpec:
+    FieldType:
+      type: string
+      enum: [temporal, quantitative, nominal, ordinal, boolean, identifier]
+    FieldRole:
+      type: string
+      enum: [dimension, measure, key]
+    TemporalGrain:
+      type: string
+      enum: [year, quarter, month, week, day, hour, minute]
+    FieldProfile:
       type: object
-      additionalProperties: true
+      description: Inferred semantic type and statistics for one result column.
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        role:
+          $ref: "#/components/schemas/FieldRole"
+        nullRate:
+          type: number
+        distinctCount:
+          type: integer
+        cardinalityRatio:
+          type: number
+        continuous:
+          type: boolean
+        monotonic:
+          type: string
+          enum: [increasing, decreasing, none]
+        min:
+          type: ["number", "null"]
+        max:
+          type: ["number", "null"]
+        sum:
+          type: ["number", "null"]
+        temporalGrain:
+          oneOf:
+            - $ref: "#/components/schemas/TemporalGrain"
+            - type: "null"
+        sampleValues:
+          type: array
+          items:
+            type: string
+      required:
+        [
+          name,
+          type,
+          role,
+          nullRate,
+          distinctCount,
+          cardinalityRatio,
+          continuous,
+          monotonic,
+          min,
+          max,
+          sum,
+          temporalGrain,
+          sampleValues,
+        ]
+    DataProfile:
+      type: object
+      description: The typed schema of a result set, used to decide which charts are valid.
+      properties:
+        rowCount:
+          type: integer
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldProfile"
+        measures:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        temporal:
+          type: array
+          items:
+            type: string
+        signature:
+          type: string
+      required: [rowCount, fields, measures, dimensions, temporal, signature]
+    ChartType:
+      type: string
+      enum:
+        [
+          kpi,
+          table,
+          line,
+          multi_line,
+          area,
+          stacked_area,
+          bar,
+          bar_horizontal,
+          grouped_bar,
+          stacked_bar,
+          stacked_bar_100,
+          pie,
+          donut,
+          scatter,
+          bubble,
+          histogram,
+          heatmap,
+          radar,
+          funnel,
+          treemap,
+        ]
+    FieldRef:
+      type: object
+      description: One result column bound to an encoding channel.
+      properties:
+        field:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        grain:
+          oneOf:
+            - $ref: "#/components/schemas/TemporalGrain"
+            - type: "null"
+      required: [field, type, grain]
+    ChartEncoding:
+      type: object
+      description: A chart type with each of its channels bound to a result column.
+      properties:
+        chartType:
+          $ref: "#/components/schemas/ChartType"
+        label:
+          type: string
+        family:
+          type: string
+          enum: [summary, trend, comparison, composition, distribution, relationship]
+        rationale:
+          type: string
+        x:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        y:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldRef"
+        series:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        size:
+          type: ["object", "null"]
+          allOf:
+            - $ref: "#/components/schemas/FieldRef"
+        orientation:
+          type: string
+          enum: [vertical, horizontal]
+        stack:
+          type: string
+          enum: [none, stacked, normalized]
+        colorJob:
+          type: string
+          enum: [none, categorical, sequential, ordinal]
+        score:
+          type: number
+      required:
+        [chartType, label, family, rationale, x, y, series, size, orientation, stack, colorJob, score]
     InsightOutput:
       type: object
       properties:
@@ -330,13 +492,18 @@ components:
           items:
             type: string
         chartType:
-          type: string
-          enum: [line, bar, area, scatter, pie, kpi_card, table]
-        echartsSpec:
-          $ref: "#/components/schemas/ChartSpec"
+          $ref: "#/components/schemas/ChartType"
+        encoding:
+          $ref: "#/components/schemas/ChartEncoding"
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartEncoding"
+        dataProfile:
+          $ref: "#/components/schemas/DataProfile"
         confidence:
           type: number
-      required: [insights, chartType, echartsSpec, confidence]
+      required: [insights, chartType, encoding, alternatives, dataProfile, confidence]
     QueryRunInput:
       type: object
       properties:

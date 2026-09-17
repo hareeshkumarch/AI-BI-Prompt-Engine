@@ -1,3 +1,7 @@
+import type { ChartType } from "./chart-catalog";
+import type { ChartEncoding } from "./chart-mapper";
+import type { DataProfile } from "./data-profile";
+
 export type SqlDialect =
   | "postgresql"
   | "mysql"
@@ -81,8 +85,10 @@ export type QueryResult = {
 
 export type InsightOutput = {
   insights: string[];
-  chartType: "line" | "bar" | "area" | "scatter" | "pie" | "kpi_card" | "table";
-  echartsSpec: Record<string, unknown>;
+  chartType: ChartType;
+  encoding: ChartEncoding;
+  alternatives: ChartEncoding[];
+  dataProfile: DataProfile;
   confidence: number;
 };
 

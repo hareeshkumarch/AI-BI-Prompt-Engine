@@ -19,13 +19,6 @@ type GeneratedSql = {
   clarification: string | null;
 };
 
-type GeneratedInsight = {
-  insights: string[];
-  chartType: "line" | "bar" | "area" | "scatter" | "pie" | "kpi_card" | "table";
-  echartsSpec: Record<string, unknown>;
-  confidence: number;
-};
-
 function deterministicSql(question: string, dialect: SqlDialect): GeneratedSql {
   const normalized = question.toLowerCase();
   if (normalized.includes("customer") && normalized.includes("spend")) {
@@ -117,46 +110,4 @@ export async function generateSql(
     logger.warn({ err: error }, "SQL generation provider failed; using the deterministic fallback");
     return deterministicSql(question, context.dialect);
   }
-}
-
-export function synthesizeInsight(question: string, result: { columns: string[]; rows: Record<string, unknown>[] }): GeneratedInsight {
-  const isTimeSeries = result.columns.some((column) => /month|date|time|week/i.test(column));
-  const dimension = result.columns.find((column) => !/revenue|count|amount|total|mrr|value/i.test(column));
-  const measure = result.columns.find((column) => /revenue|count|amount|total|mrr|value/i.test(column));
-  const values = result.rows.map((row) => {
-    const value = Number(row[measure ?? ""]);
-    return Number.isFinite(value) ? value : 0;
-  });
-  const total = values.reduce((sum, value) => sum + value, 0);
-  const peak = values.length > 0 ? Math.max(...values) : 0;
-  const peakIndex = values.indexOf(peak);
-  const labels = result.rows.map((row) => String(row[dimension ?? result.columns[0]] ?? ""));
-
-  if (result.rows.length === 1 && measure) {
-    const headline = Number(result.rows[0]?.[measure]);
-    return {
-      insights: [`${measure.replaceAll("_", " ")} is ${Number.isFinite(headline) ? headline.toLocaleString() : "not available"} for this query.`],
-      chartType: "kpi_card",
-      echartsSpec: { title: { text: question }, series: [{ type: "gauge", data: [{ value: values[0] ?? 0 }] }] },
-      confidence: 0.86,
-    };
-  }
-
-  return {
-    insights: [
-      `${result.rows.length} groups returned, covering ${measure ? total.toLocaleString() : "the selected breakdown"}.`,
-      peakIndex >= 0 && labels[peakIndex] ? `${labels[peakIndex]} is the leading group at ${peak.toLocaleString()}.` : "The result is ready for comparison.",
-      isTimeSeries ? "The result is ordered for trend analysis across the selected time grain." : "The result is ranked for contribution analysis.",
-    ],
-    chartType: isTimeSeries ? "line" : "bar",
-    echartsSpec: {
-      animationDuration: 500,
-      tooltip: { trigger: "axis" },
-      grid: { left: 48, right: 24, top: 28, bottom: 48 },
-      xAxis: { type: "category", data: labels },
-      yAxis: { type: "value" },
-      series: [{ type: isTimeSeries ? "line" : "bar", smooth: true, data: values }],
-    },
-    confidence: result.rows.length > 1 ? 0.82 : 0.65,
-  };
 }

@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import { getGetQueryRunQueryKey, getGetStudioOverviewQueryKey, getListQueryRunsQueryKey, useCreateQueryRun, useGetQueryRun, useGetSchemaContext, useGetStudioOverview, useListConnections, useListQueryRuns, useRepairQueryRun } from '@workspace/api-client-react';
-import type { QueryRunInput, QueryRunInputDialect } from '@workspace/api-client-react';
-import { ConnectionMark, ConfidenceRing, DataResultTable, EmptyState, ErrorState, HealthBadge, InsightChart, LoadingBlock, QueryRunList, RunMeta, SchemaTableRow, SearchField, SectionHeading, SecurityNote, SelectField, Sparkline, StatCard, StatusPill, Trace, dialectIcon, formatRelative, useDebouncedValue } from '@/components/studio-ui';
+import type { InsightOutput, QueryResult, QueryRunInput, QueryRunInputDialect } from '@workspace/api-client-react';
+import { ConnectionMark, ConfidenceRing, DataResultTable, EmptyState, ErrorState, HealthBadge, LoadingBlock, QueryRunList, ResultSchema, RunMeta, SchemaTableRow, SearchField, SectionHeading, SecurityNote, SelectField, Sparkline, StatCard, StatusPill, Trace, dialectIcon, formatRelative, useDebouncedValue } from '@/components/studio-ui';
+import { ChartSwitcher, InsightChart, useChartSelection } from '@/components/insight-chart';
 
 const dialectOptions = [
   { value: 'postgresql', label: 'PostgreSQL', icon: dialectIcon('postgresql'), description: 'Advanced open-source RDBMS' },
@@ -134,10 +135,31 @@ export function RunDetailPage() {
       <div className="space-y-5">
         <section className="rounded-sm border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-5 py-3"><div className="flex items-center gap-2"><FileCode2 size={15} className="text-primary" /><span className="text-[10px] font-semibold uppercase tracking-[.16em]">Generated SQL</span></div><button type="button" onClick={() => void navigator.clipboard?.writeText(run.sql)} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground hover:text-primary" data-testid="button-copy-sql"><Copy size={12} /> Copy</button></div><pre className="max-h-[250px] overflow-auto whitespace-pre-wrap p-5 mono text-xs leading-6 text-foreground/80">{run.sql || 'No SQL was generated for this run.'}</pre><div className="border-t border-border bg-muted/25 px-5 py-3 text-xs leading-5 text-muted-foreground"><span className="font-semibold text-foreground">Why this query:</span> {run.sqlExplanation}</div></section>
         {run.result && <DataResultTable result={run.result} />}
-        {run.insight && <section className="rounded-sm border border-border bg-card p-5"><div className="flex items-start justify-between gap-4"><SectionHeading eyebrow="Synthesis" title="What the data says" detail={`${run.insight.chartType} visualization · ${run.insight.insights.length} observations`} /><ConfidenceRing value={run.insight.confidence} /></div><div className="grid gap-5 md:grid-cols-[1fr_1.2fr]"><div className="space-y-3">{run.insight.insights.map((insight, index) => <div key={insight} className="flex gap-3 text-xs leading-5"><span className="mono text-primary">0{index + 1}</span><p>{insight}</p></div>)}</div><div className="rounded-sm border border-border bg-muted/20 p-3">{run.result ? <InsightChart type={run.insight.chartType} result={run.result} /> : <p className="grid h-48 place-items-center text-xs text-muted-foreground">No result rows to visualize.</p>}</div></div></section>}
+        {run.insight && run.result && <InsightPanel insight={run.insight} result={run.result} />}
+        {run.insight && <ResultSchema profile={run.insight.dataProfile} />}
       </div>
     </div>
   </PageFrame>;
+}
+
+function InsightPanel({ insight, result }: { insight: InsightOutput; result: QueryResult }) {
+  const { options, active, select } = useChartSelection(insight.encoding, insight.alternatives);
+  return <section className="rounded-sm border border-border bg-card p-5">
+    <div className="flex items-start justify-between gap-4">
+      <SectionHeading eyebrow="Synthesis" title="What the data says" detail={`${active.label} · ${active.family} · ${insight.insights.length} observations`} />
+      <ConfidenceRing value={insight.confidence} />
+    </div>
+    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+      <div className="space-y-3">
+        {insight.insights.map((observation, index) => <div key={observation} className="flex gap-3 text-xs leading-5"><span className="mono text-primary">0{index + 1}</span><p>{observation}</p></div>)}
+        <p className="border-t border-border pt-3 text-[11px] leading-5 text-muted-foreground">{active.rationale}</p>
+      </div>
+      <div className="min-w-0 space-y-3">
+        <ChartSwitcher options={options} active={active.chartType} onSelect={select} />
+        <div className="rounded-sm border border-border bg-muted/20 p-3"><InsightChart encoding={active} result={result} /></div>
+      </div>
+    </div>
+  </section>;
 }
 
 export function SchemaPage() {

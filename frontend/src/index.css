@@ -184,6 +184,35 @@
     from hsl(var(--destructive)) h s
       calc(l + var(--opaque-button-border-intensity)) / alpha
   );
+
+  /* Data-viz series slots — fixed order, validated for CVD in both modes.
+     Regenerate with the palette validator before changing any value. */
+  --series-1: #1ba794;
+  --series-2: #eb6834;
+  --series-3: #2a78d6;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
+
+  /* Sequential ramp (magnitude), light → dark */
+  --ramp-1: #62bcb0;
+  --ramp-2: #48a89b;
+  --ramp-3: #3a887d;
+  --ramp-4: #2c6860;
+  --ramp-5: #1f4742;
+
+  /* Ink that stays legible on each ramp step in this mode */
+  --ramp-1-ink: #10302c;
+  --ramp-2-ink: #0c2622;
+  --ramp-3-ink: #ffffff;
+  --ramp-4-ink: #ffffff;
+  --ramp-5-ink: #ffffff;
+
+  --viz-surface: hsl(var(--card));
+  --viz-grid: hsl(var(--border));
+  --viz-label: hsl(var(--muted-foreground));
 }
 
 .dark {
@@ -225,6 +254,28 @@
   --destructive-foreground: 0 0% 98%;
   --input: 214 28% 28%;
   --ring: 172 72% 48%;
+
+  --series-1: #1ba794;
+  --series-2: #d95926;
+  --series-3: #3987e5;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+
+  --ramp-1: #21635b;
+  --ramp-2: #309184;
+  --ramp-3: #40bfae;
+  --ramp-4: #6ecfc2;
+  --ramp-5: #9cded5;
+
+  --ramp-1-ink: #ffffff;
+  --ramp-2-ink: #ffffff;
+  --ramp-3-ink: #0c2622;
+  --ramp-4-ink: #0c2622;
+  --ramp-5-ink: #0c2622;
+
   --chart-1: 172 72% 48%;
   --chart-2: 35 88% 58%;
   --chart-3: 214 65% 63%;
