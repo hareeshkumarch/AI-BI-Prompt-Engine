@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: studio
+    description: AI BI Studio workspace operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /studio/overview:
+    get:
+      operationId: getStudioOverview
+      tags: [studio]
+      summary: Get the BI workspace overview
+      responses:
+        "200":
+          description: Workspace overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioOverview"
+  /studio/connections:
+    get:
+      operationId: listConnections
+      tags: [studio]
+      summary: List configured data connections
+      responses:
+        "200":
+          description: Data connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataConnection"
+  /studio/schema-context:
+    get:
+      operationId: getSchemaContext
+      tags: [studio]
+      summary: Get token-efficient contextualized schema metadata
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: table
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contextualized schema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaContext"
+  /studio/runs:
+    get:
+      operationId: listQueryRuns
+      tags: [studio]
+      summary: List recent orchestration runs
+      responses:
+        "200":
+          description: Recent query runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QueryRunSummary"
+    post:
+      operationId: createQueryRun
+      tags: [studio]
+      summary: Run the AI BI orchestration pipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryRunInput"
+      responses:
+        "201":
+          description: Completed or clarification-needed run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryRun"
+        "400":
+          description: Unsafe or invalid question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /studio/runs/{runId}:
+    get:
+      operationId: getQueryRun
+      tags: [studio]
+      summary: Get a full orchestration run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Orchestration run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryRun"
+        "404":
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /studio/runs/{runId}/repair:
+    post:
+      operationId: repairQueryRun
+      tags: [studio]
+      summary: Repair a failed SQL stage and re-run the pipeline
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairRunInput"
+      responses:
+        "200":
+          description: Repaired orchestration run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryRun"
+        "404":
+          description: Run not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +175,264 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+      required: [error]
+    DataConnection:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [postgresql, mysql, snowflake, sqlite, duckdb]
+        host:
+          type: string
+        status:
+          type: string
+          enum: [connected, degraded, disconnected]
+        latencyMs:
+          type: integer
+        lastIntrospectedAt:
+          type: string
+          format: date-time
+        tables:
+          type: integer
+      required: [id, name, kind, host, status, latencyMs, lastIntrospectedAt, tables]
+    ColumnMetric:
+      type: object
+      properties:
+        nullRate:
+          type: number
+        cardinality:
+          type: integer
+        min:
+          type: ["number", "null"]
+        max:
+          type: ["number", "null"]
+        sampleValues:
+          type: array
+          items:
+            type: string
+      required: [nullRate, cardinality, min, max, sampleValues]
+    SchemaColumn:
+      type: object
+      properties:
+        name:
+          type: string
+        dataType:
+          type: string
+        nullable:
+          type: boolean
+        semanticType:
+          type: string
+          enum: [dimension, measure, time, key, text]
+        description:
+          type: string
+        metrics:
+          $ref: "#/components/schemas/ColumnMetric"
+      required: [name, dataType, nullable, semanticType, description, metrics]
+    ForeignKey:
+      type: object
+      properties:
+        fromColumn:
+          type: string
+        toTable:
+          type: string
+        toColumn:
+          type: string
+      required: [fromColumn, toTable, toColumn]
+    SchemaTable:
+      type: object
+      properties:
+        name:
+          type: string
+        rowCount:
+          type: integer
+        relevance:
+          type: number
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemaColumn"
+        foreignKeys:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForeignKey"
+      required: [name, rowCount, relevance, columns, foreignKeys]
+    SchemaContext:
+      type: object
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        dialect:
+          type: string
+        tokenEstimate:
+          type: integer
+        totalTables:
+          type: integer
+        selectedTables:
+          type: integer
+        tables:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemaTable"
+      required: [generatedAt, dialect, tokenEstimate, totalTables, selectedTables, tables]
+    PipelineStage:
+      type: object
+      properties:
+        id:
+          type: string
+          enum: [contextualize, generate_sql, validate, execute, repair, synthesize]
+        label:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, skipped]
+        durationMs:
+          type: integer
+        detail:
+          type: string
+      required: [id, label, status, durationMs, detail]
+    QueryResult:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        rowCount:
+          type: integer
+        truncated:
+          type: boolean
+      required: [columns, rows, rowCount, truncated]
+    ChartSpec:
+      type: object
+      additionalProperties: true
+    InsightOutput:
+      type: object
+      properties:
+        insights:
+          type: array
+          items:
+            type: string
+        chartType:
+          type: string
+          enum: [line, bar, area, scatter, pie, kpi_card, table]
+        echartsSpec:
+          $ref: "#/components/schemas/ChartSpec"
+        confidence:
+          type: number
+      required: [insights, chartType, echartsSpec, confidence]
+    QueryRunInput:
+      type: object
+      properties:
+        question:
+          type: string
+          minLength: 3
+        connectionId:
+          type: string
+        dialect:
+          type: string
+          enum: [postgresql, mysql, snowflake, sqlite, duckdb]
+        mode:
+          type: string
+          enum: [analyst, sql_only]
+      required: [question, connectionId, dialect, mode]
+    RepairRunInput:
+      type: object
+      properties:
+        instruction:
+          type: string
+      required: [instruction]
+    QueryRunSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        question:
+          type: string
+        status:
+          type: string
+          enum: [completed, clarification_needed, failed, running]
+        chartType:
+          type: string
+        rowCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: integer
+      required: [id, question, status, chartType, rowCount, createdAt, durationMs]
+    QueryRun:
+      allOf:
+        - $ref: "#/components/schemas/QueryRunSummary"
+        - type: object
+          properties:
+            connectionId:
+              type: string
+            dialect:
+              type: string
+            stages:
+              type: array
+              items:
+                $ref: "#/components/schemas/PipelineStage"
+            targetedTables:
+              type: array
+              items:
+                type: string
+            sql:
+              type: string
+            sqlExplanation:
+              type: string
+            clarification:
+              type: ["string", "null"]
+            result:
+              type: ["object", "null"]
+              allOf:
+                - $ref: "#/components/schemas/QueryResult"
+            insight:
+              type: ["object", "null"]
+              allOf:
+                - $ref: "#/components/schemas/InsightOutput"
+            error:
+              type: ["string", "null"]
+          required: [connectionId, dialect, stages, targetedTables, sql, sqlExplanation, clarification, result, insight, error]
+    StudioOverview:
+      type: object
+      properties:
+        activeConnection:
+          $ref: "#/components/schemas/DataConnection"
+        tableCount:
+          type: integer
+        columnCount:
+          type: integer
+        queryCount:
+          type: integer
+        averageLatencyMs:
+          type: integer
+        successRate:
+          type: number
+        recentRuns:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryRunSummary"
+        systemStatus:
+          type: string
+          enum: [operational, degraded]
+      required: [activeConnection, tableCount, columnCount, queryCount, averageLatencyMs, successRate, recentRuns, systemStatus]
 

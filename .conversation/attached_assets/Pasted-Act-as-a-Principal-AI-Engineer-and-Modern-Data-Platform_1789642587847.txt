@@ -1,0 +1,42 @@
+Act as a Principal AI Engineer and Modern Data Platform Architect.
+
+I am building an adaptable, pluggable BI & dashboarding tool (FastAPI backend, Next.js frontend, SQLAlchemy/DuckDB engine) that connects to any relational database (PostgreSQL, MySQL, Snowflake, SQLite) and lets users ask questions in plain English to generate dynamic charts and analytical insights.
+
+I need you to design the complete "Prompt Engine" and AI Orchestration Pipeline for this platform. 
+
+Provide a rigorous, production-ready specification containing the following:
+
+1. ARCHITECTURAL PIPELINE OVERVIEW
+- Diagram and explanation of the end-to-end flow: User Question -> Schema Retrieval/Pruning -> Text-to-SQL -> Execution & Self-Healing -> Insight Extraction -> Chart JSON Generation.
+
+2. DYNAMIC SCHEMA CONTEXTUALIZER (PROMPT STAGE 0)
+- How to structure and inject the database metadata into context without exceeding token limits.
+- Exact format to represent tables, data types, sample values, foreign keys, and column metrics (cardinality, min/max).
+
+3. STAGE 1: TEXT-TO-SQL PROMPT TEMPLATE
+- Complete System Prompt with strict guardrails (read-only enforcement, dialect compliance, LIMIT constraints, handling ambigous metrics).
+- 3 Few-Shot Examples covering:
+  * Time-series aggregations (e.g., MoM growth).
+  * Categorical breakdowns (e.g., Top 5 customers by spend).
+  * Multi-table joins using foreign keys.
+- Pydantic schema for the LLM output (SQL string, explanation, targeted tables).
+
+4. STAGE 2: SQL ERROR CORRECTION & SELF-HEALING PROMPT
+- A system prompt for the retry loop when database execution fails (e.g., "column does not exist" or syntax error).
+- How to pass the bad SQL, execution traceback, and schema context back to the model for automatic repair.
+
+5. STAGE 3: INSIGHT & DECLARATIVE VISUALIZATION PROMPT
+- System prompt that receives:
+  * The user's original query.
+  * The SQL query executed.
+  * The raw JSON query result (first 20-50 rows).
+- Output format: Enforce strict JSON output containing:
+  * "insights": 2-3 concise, data-driven bullet points (highlighting trends, anomalies, or dominant contributors).
+  * "chart_type": (e.g., line, bar, scatter, pie, kpi_card).
+  * "echarts_spec": A production-ready Apache ECharts JSON configuration object matching the dataset.
+
+6. EDGE CASE & SAFETY HANDLING
+- Injection prevention (blocking DDL/DML, drop, delete, update).
+- Strategy for ambiguous user prompts (when the model should ask for clarification instead of guessing).
+
+Make all prompt templates explicit, production-ready strings with placeholders (e.g., {{schema}}, {{query}}, {{error}}), not general summaries.
