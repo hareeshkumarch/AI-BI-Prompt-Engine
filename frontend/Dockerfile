@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy workspace root config
-COPY package.json pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc tsconfig.base.json tsconfig.json ./
 
 # Copy shared libs
 COPY lib/ ./lib/
@@ -27,8 +27,11 @@ RUN pnpm --filter @workspace/ai-bi-studio run build
 # ---- Stage 2: Serve with Nginx ----
 FROM nginx:alpine AS production
 
-# Copy custom nginx config
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Nginx renders this template through envsubst at container start
+COPY frontend/nginx.conf.template /etc/nginx/templates/default.conf.template
+
+ENV BACKEND_ORIGIN=http://backend:3000
+ENV DNS_RESOLVER=127.0.0.11
 
 # Copy built static assets
 COPY --from=builder /app/frontend/dist/public /usr/share/nginx/html

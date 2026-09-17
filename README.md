@@ -9,7 +9,11 @@ An AI-native Business Intelligence workspace that turns plain-English questions 
 - **Schema Contextualization** — Schema context is ranked and pruned for optimal prompt construction
 - **Orchestration Pipeline** — Full stage-by-stage trace from question → SQL → results → visualization
 - **AI Provider Flexibility** — Supports OpenAI with a deterministic local fallback for demo/testing
-- **Interactive Visualizations** — Insight charts powered by Recharts
+- **Interactive Visualizations** — Insight charts rendered from the query result with Recharts
+
+> **Note on execution.** The `execute` stage currently returns a bounded demo result set from the
+> in-memory catalog rather than issuing the generated SQL against a live warehouse. Everything
+> upstream of it — contextualization, generation, and the guardrails — runs for real.
 
 ## 🏗️ Architecture
 
@@ -22,7 +26,8 @@ AI-BI-Prompt-Engine/
 │   │   ├── hooks/           # Custom React hooks
 │   │   └── lib/             # Utilities
 │   ├── Dockerfile           # Multi-stage: build → Nginx
-│   └── vite.config.ts
+│   ├── nginx.conf.template  # SPA serving + /api reverse proxy (envsubst)
+│   └── vite.config.ts       # Dev server proxies /api to the backend
 │
 ├── backend/                 # Express 5 API server
 │   ├── src/
@@ -33,9 +38,10 @@ AI-BI-Prompt-Engine/
 │   │   │       ├── orchestrator.ts         # Pipeline orchestration
 │   │   │       ├── schema-contextualizer.ts
 │   │   │       ├── sql-guardrails.ts       # SQL safety validation
-│   │   │       └── types.ts
+│   │   │       ├── types.ts
+│   │   │       └── __tests__/              # Guardrail + orchestrator tests (Vitest)
 │   │   ├── routes/          # API routes
-│   │   ├── middlewares/
+│   │   ├── middlewares/      # JSON 404 + error handlers
 │   │   └── lib/             # Shared utilities (logger, etc.)
 │   ├── Dockerfile           # Multi-stage: build → Node.js
 │   └── build.mjs            # esbuild configuration
@@ -85,12 +91,16 @@ pnpm install
 cp .env.example .env
 # Edit .env with your database URL and optional OpenAI API key
 
-# 4. Start the frontend (port 5173)
-pnpm dev:frontend
-
-# 5. Start the backend (port 3000) — in a separate terminal
+# 4. Start the backend (port 3000)
 pnpm dev:backend
+
+# 5. Start the frontend (port 5173) — in a separate terminal
+pnpm dev:frontend
 ```
+
+The frontend calls the API on a relative `/api` path. The Vite dev server proxies that to the
+backend (`API_PROXY_TARGET`, default `http://localhost:3000`), and in Docker Nginx proxies it to
+the `backend` service — so both processes need to be running.
 
 ### Docker Deployment
 
@@ -110,6 +120,13 @@ docker compose up --build
 # Full typecheck across all packages
 pnpm run typecheck
 
+# Run the test suites
+pnpm run test
+
+# Format (or check formatting) across the workspace
+pnpm run format
+pnpm run format:check
+
 # Build all packages
 pnpm run build
 
@@ -119,11 +136,26 @@ pnpm run codegen
 
 ## 🔧 Environment Variables
 
-| Variable        | Description                                    | Default                  |
-| --------------- | ---------------------------------------------- | ------------------------ |
-| `PORT`          | Backend server port                            | `3000`                   |
-| `DATABASE_URL`  | PostgreSQL connection string                   | —                        |
-| `OPENAI_API_KEY`| OpenAI API key (optional — fallback available) | —                        |
+### Backend
+
+| Variable            | Description                                            | Default          |
+| ------------------- | ------------------------------------------------------ | ---------------- |
+| `PORT`              | Backend server port                                    | `3000`           |
+| `DATABASE_URL`      | PostgreSQL connection string                           | —                |
+| `OPENAI_API_KEY`    | OpenAI API key (optional — deterministic fallback)     | —                |
+| `OPENAI_MODEL`      | Model used for SQL generation                          | `gpt-4.1-mini`   |
+| `OPENAI_TIMEOUT_MS` | Abort the generation call after this long              | `20000`          |
+| `CORS_ORIGIN`       | Comma-separated allowed origins, or `*`                | `*`              |
+| `LOG_LEVEL`         | Pino log level                                         | `info`           |
+
+### Frontend
+
+| Variable            | Description                                            | Default                  |
+| ------------------- | ------------------------------------------------------ | ------------------------ |
+| `PORT`              | Dev/preview server port                                | `5173`                   |
+| `BASE_PATH`         | Public base path for the built SPA                     | `/`                      |
+| `API_PROXY_TARGET`  | Where the dev/preview server proxies `/api`            | `http://localhost:3000`  |
+| `BACKEND_ORIGIN`    | Where the Nginx container proxies `/api` (runtime)     | `http://backend:3000`    |
 
 ## 📄 License
 

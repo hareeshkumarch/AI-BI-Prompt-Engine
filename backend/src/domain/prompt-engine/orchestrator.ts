@@ -13,7 +13,20 @@ import type {
   SqlDialect,
 } from "./types";
 
+const MAX_RETAINED_RUNS = 200;
+
 const runs = new Map<string, QueryRun>();
+
+function storeRun(run: QueryRun) {
+  runs.delete(run.id);
+  runs.set(run.id, run);
+  while (runs.size > MAX_RETAINED_RUNS) {
+    const oldest = runs.keys().next();
+    if (oldest.done) break;
+    runs.delete(oldest.value);
+  }
+  return run;
+}
 
 const demoRows = {
   trend: [
@@ -68,9 +81,9 @@ function stage(
   return { id, label, status, detail, durationMs };
 }
 
-export async function executeRun(input: QueryRunInput, questionOverride = input.question): Promise<QueryRun> {
+export async function executeRun(input: QueryRunInput, questionOverride = input.question, runId?: string): Promise<QueryRun> {
   const started = Date.now();
-  const id = randomUUID();
+  const id = runId ?? randomUUID();
   const stages: QueryRun["stages"] = [
     stage("contextualize", "Schema contextualizer", "completed", "Selected relevant tables and pruned metadata to the prompt budget.", 24),
     stage("generate_sql", "Text-to-SQL", "running", "Resolving metric, grain, and dialect.", 0),
@@ -102,8 +115,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight: null,
       error: null,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   }
 
   try {
@@ -132,8 +144,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight,
       error: null,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   } catch (error) {
     const message = error instanceof UnsafeSqlError ? error.message : "Query execution failed.";
     stages[2] = stage("validate", "Policy guardrails", "failed", message, 8);
@@ -157,8 +168,7 @@ export async function executeRun(input: QueryRunInput, questionOverride = input.
       insight: null,
       error: message,
     };
-    runs.set(id, run);
-    return run;
+    return storeRun(run);
   }
 }
 
@@ -178,10 +188,10 @@ export async function repairRun(id: string, input: RepairRunInput) {
   const rerun = await executeRun(
     { question: current.question, connectionId: current.connectionId, dialect: current.dialect as SqlDialect, mode: "analyst" },
     `${current.question}. ${input.instruction}`,
+    id,
   );
   rerun.stages = rerun.stages.map((item) => item.id === "repair" ? { ...item, status: "completed", detail: "Applied the repair instruction and re-ran validation.", durationMs: 17 } : item);
-  runs.set(id, { ...rerun, id });
-  return runs.get(id);
+  return storeRun(rerun);
 }
 
 export function getOverview() {

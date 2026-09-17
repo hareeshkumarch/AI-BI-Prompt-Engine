@@ -1,16 +1,5 @@
 import type { DataConnection, SchemaTable } from "./types";
 
-export const demoConnection: DataConnection = {
-  id: "warehouse-demo",
-  name: "Northstar revenue warehouse",
-  kind: "postgresql",
-  host: "analytics.northstar.internal",
-  status: "connected",
-  latencyMs: 84,
-  lastIntrospectedAt: "2026-09-17T09:30:00.000Z",
-  tables: 6,
-};
-
 const measure = (
   sampleValues: string[],
   cardinality: number,
@@ -202,3 +191,14 @@ export const schemaCatalog: SchemaTable[] = [
     foreignKeys: [{ fromColumn: "customer_id", toTable: "customers", toColumn: "customer_id" }],
   },
 ];
+
+export const demoConnection: DataConnection = {
+  id: "warehouse-demo",
+  name: "Northstar revenue warehouse",
+  kind: "postgresql",
+  host: "analytics.northstar.internal",
+  status: "connected",
+  latencyMs: 84,
+  lastIntrospectedAt: "2026-09-17T09:30:00.000Z",
+  tables: schemaCatalog.length,
+};

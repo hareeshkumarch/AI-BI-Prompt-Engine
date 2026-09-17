@@ -1,7 +1,28 @@
-import { AlertTriangle, ArrowUpRight, Check, ChevronDown, Clock3, Database, Loader2, RefreshCw, Search, ShieldCheck, Table2, X } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, ArrowUpRight, Bird, Check, ChevronDown, Clock3, Database, HardDrive, Loader2, RefreshCw, Search, ShieldCheck, Snowflake, Table2, Terminal, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, type TooltipProps } from 'recharts';
 import type { PipelineStage, QueryResult, QueryRunSummary, SchemaTable } from '@workspace/api-client-react';
 import { Link } from 'wouter';
+
+const CHART_MARGIN = { top: 8, right: 8, bottom: 0, left: 0 };
+const MEASURE_PATTERN = /revenue|count|amount|total|mrr|value/i;
+
+export function dialectIcon(kind: string, size = 16) {
+  if (kind === 'mysql') return <HardDrive size={size} />;
+  if (kind === 'snowflake') return <Snowflake size={size} />;
+  if (kind === 'sqlite') return <Terminal size={size} />;
+  if (kind === 'duckdb') return <Bird size={size} />;
+  return <Database size={size} />;
+}
+
+export function useDebouncedValue<T>(value: T, delayMs = 250) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 
 export function SectionHeading({ eyebrow, title, detail, action }: { eyebrow?: string; title: string; detail?: string; action?: React.ReactNode }) {
   return <div className="mb-5 flex items-end justify-between gap-4"><div>{eyebrow && <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.18em] text-primary">{eyebrow}</p>}<h2 className="font-display text-lg font-bold tracking-[-.03em] text-foreground">{title}</h2>{detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}</div>{action}</div>;
@@ -84,10 +105,108 @@ export function ConfidenceRing({ value }: { value: number }) {
   return <div className="relative size-16"><svg viewBox="0 0 52 52" className="-rotate-90"><circle cx="26" cy="26" r="22" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" /><circle cx="26" cy="26" r="22" fill="none" stroke="hsl(var(--primary))" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${dash} ${circumference}`} /></svg><span className="absolute inset-0 grid place-items-center font-display text-sm font-bold">{percent}%</span></div>;
 }
 
-export function MiniChart({ type = 'line' }: { type?: string }) {
-  const bars = [42, 68, 52, 84, 61, 75, 92, 70, 88];
-  if (type === 'bar') return <div className="flex h-36 items-end gap-2 px-3 pb-1">{bars.map((height, index) => <div key={index} className="flex-1 rounded-t-sm bg-primary/75 transition-all hover:bg-primary" style={{ height: `${height}%` }} />)}</div>;
-  return <div className="h-36 px-1"><svg viewBox="0 0 400 140" preserveAspectRatio="none" className="h-full w-full"><path d="M0 114 C 35 110, 48 86, 76 98 S 118 61, 148 79 S 190 35, 216 62 S 258 82, 286 42 S 335 66, 400 18 L400 140 L0 140Z" fill="hsl(var(--primary) / .1)" /><path d="M0 114 C 35 110, 48 86, 76 98 S 118 61, 148 79 S 190 35, 216 62 S 258 82, 286 42 S 335 66, 400 18" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" vectorEffect="non-scaling-stroke" /></svg></div>;
+const CHART_SERIES_COLOR = 'hsl(var(--chart-1))';
+const CHART_AXIS_COLOR = 'hsl(var(--border))';
+const CHART_TEXT_COLOR = 'hsl(var(--muted-foreground))';
+
+function isNumericLike(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  return Number.isFinite(Number(value));
+}
+
+function resolveSeries(result: QueryResult) {
+  const numericColumns = result.columns.filter((column) => result.rows.length > 0 && result.rows.every((row) => isNumericLike(row[column])));
+  const valueKey = result.columns.find((column) => MEASURE_PATTERN.test(column)) ?? numericColumns[numericColumns.length - 1] ?? result.columns[result.columns.length - 1] ?? '';
+  const dimensionKey = result.columns.find((column) => column !== valueKey && !numericColumns.includes(column));
+  const categoryKey = dimensionKey ?? result.columns.find((column) => column !== valueKey) ?? valueKey;
+  const data = result.rows.map((row) => ({
+    label: String(row[categoryKey] ?? ''),
+    value: Number(row[valueKey]) || 0,
+  }));
+  return { categoryKey, valueKey, data, hasDimension: dimensionKey !== undefined };
+}
+
+function compactNumber(value: number) {
+  return Math.abs(value) >= 1000 ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value) : value.toLocaleString();
+}
+
+function ChartTooltip({ active, payload, label, valueKey }: TooltipProps<number, string> & { valueKey: string }) {
+  if (!active || !payload?.length) return null;
+  return <div className="rounded-sm border border-border bg-popover px-3 py-2 shadow-md">
+    <p className="text-[11px] font-semibold text-popover-foreground">{label}</p>
+    <p className="mono mt-0.5 text-[11px] text-muted-foreground">{valueKey.replaceAll('_', ' ')}: {Number(payload[0]?.value ?? 0).toLocaleString()}</p>
+  </div>;
+}
+
+export function InsightChart({ type, result }: { type: string; result: QueryResult }) {
+  if (result.rows.length === 0) return <div className="grid h-48 place-items-center text-xs text-muted-foreground">No rows to visualize.</div>;
+
+  const { categoryKey, valueKey, data, hasDimension } = resolveSeries(result);
+
+  if (type === 'kpi_card' || data.length === 1) {
+    const [headline] = data;
+    return <div className="flex h-48 flex-col items-center justify-center text-center" data-testid="insight-kpi">
+      <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">{valueKey.replaceAll('_', ' ')}</p>
+      <p className="font-display text-4xl font-extrabold tracking-[-.05em] text-foreground">{(headline?.value ?? 0).toLocaleString()}</p>
+      {hasDimension && headline?.label && <p className="mono mt-1 text-[10px] text-muted-foreground">{headline.label}</p>}
+    </div>;
+  }
+
+  if (type === 'table') {
+    return <div className="grid h-48 place-items-center px-4 text-center text-xs text-muted-foreground">This result reads as a table — see the result preview above.</div>;
+  }
+
+  const tick = { fill: CHART_TEXT_COLOR, fontSize: 10 };
+  const tooltip = <Tooltip key="tip" content={<ChartTooltip valueKey={valueKey} />} cursor={{ stroke: CHART_AXIS_COLOR, fill: 'hsl(var(--muted) / .45)' }} />;
+  const isBar = type !== 'line' && type !== 'area' && type !== 'scatter';
+  const ranked = isBar && data.some((point) => point.label.length > 8);
+  const wrapper = (chart: React.ReactElement) => <div className="h-48 w-full" data-testid={`insight-chart-${ranked ? 'bar-ranked' : type}`} aria-label={`${valueKey.replaceAll('_', ' ')} by ${categoryKey.replaceAll('_', ' ')}`}>
+    <ResponsiveContainer width="100%" height="100%">{chart}</ResponsiveContainer>
+  </div>;
+
+  if (ranked) {
+    return wrapper(<BarChart data={data} layout="vertical" margin={CHART_MARGIN} barCategoryGap="22%">
+      <CartesianGrid key="grid" stroke={CHART_AXIS_COLOR} strokeDasharray="0" horizontal={false} />
+      <XAxis key="x" type="number" tickFormatter={compactNumber} tick={tick} tickLine={false} axisLine={false} />
+      <YAxis key="y" type="category" dataKey="label" tick={tick} tickLine={false} axisLine={{ stroke: CHART_AXIS_COLOR }} width={104} interval={0} />
+      {tooltip}
+      <Bar dataKey="value" fill={CHART_SERIES_COLOR} radius={[0, 4, 4, 0]} />
+    </BarChart>);
+  }
+
+  const axes = [
+    <CartesianGrid key="grid" stroke={CHART_AXIS_COLOR} strokeDasharray="0" vertical={false} />,
+    <XAxis key="x" dataKey="label" tick={tick} tickLine={false} axisLine={{ stroke: CHART_AXIS_COLOR }} interval="preserveStartEnd" minTickGap={8} />,
+    <YAxis key="y" tickFormatter={compactNumber} tick={tick} tickLine={false} axisLine={false} width={46} />,
+    tooltip,
+  ];
+
+  if (type === 'area') {
+    return wrapper(<AreaChart data={data} margin={CHART_MARGIN}>
+      {axes}
+      <Area type="monotone" dataKey="value" stroke={CHART_SERIES_COLOR} strokeWidth={2} fill={CHART_SERIES_COLOR} fillOpacity={0.12} activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }} />
+    </AreaChart>);
+  }
+
+  if (type === 'scatter') {
+    return wrapper(<ScatterChart margin={CHART_MARGIN}>
+      {axes}
+      <Scatter data={data} dataKey="value" fill={CHART_SERIES_COLOR} />
+    </ScatterChart>);
+  }
+
+  if (type === 'line') {
+    return wrapper(<LineChart data={data} margin={CHART_MARGIN}>
+      {axes}
+      <Line type="monotone" dataKey="value" stroke={CHART_SERIES_COLOR} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }} />
+    </LineChart>);
+  }
+
+  return wrapper(<BarChart data={data} margin={CHART_MARGIN} barCategoryGap="22%">
+    {axes}
+    <Bar dataKey="value" fill={CHART_SERIES_COLOR} radius={[4, 4, 0, 0]} />
+  </BarChart>);
 }
 
 export function SchemaTableRow({ table }: { table: SchemaTable }) {
@@ -141,7 +260,7 @@ export function RunMeta({ label, value, icon: Icon = Clock3 }: { label: string; 
 }
 
 export function ConnectionMark({ kind }: { kind: string }) {
-  return <span className="grid size-9 place-items-center rounded-sm border border-primary/20 bg-primary/10 text-primary"><Database size={16} /></span>;
+  return <span className="grid size-9 place-items-center rounded-sm border border-primary/20 bg-primary/10 text-primary" title={kind}>{dialectIcon(kind)}</span>;
 }
 
 export function SecurityNote() {

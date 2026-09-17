@@ -1,5 +1,16 @@
 import type { SchemaContext, SqlDialect } from "./types";
 import { schemaPrompt } from "./schema-contextualizer";
+import { MAX_ROW_LIMIT } from "./sql-guardrails";
+import { logger } from "../../lib/logger";
+
+const OPENAI_MODEL = process.env["OPENAI_MODEL"] ?? "gpt-4.1-mini";
+const OPENAI_TIMEOUT_MS = Number(process.env["OPENAI_TIMEOUT_MS"] ?? 20_000);
+
+function monthExpression(dialect: SqlDialect) {
+  if (dialect === "mysql") return "DATE_FORMAT(ordered_at, '%Y-%m-01')";
+  if (dialect === "sqlite") return "strftime('%Y-%m-01', ordered_at)";
+  return "DATE_TRUNC('month', ordered_at)";
+}
 
 type GeneratedSql = {
   sql: string;
@@ -32,9 +43,8 @@ LIMIT 5`,
     };
   }
   if (normalized.includes("month") || normalized.includes("trend") || normalized.includes("growth")) {
-    const dateFunction = dialect === "mysql" ? "DATE_FORMAT(ordered_at, '%Y-%m-01')" : "DATE_TRUNC('month', ordered_at)";
     return {
-      sql: `SELECT ${dateFunction} AS month, SUM(net_revenue) AS revenue
+      sql: `SELECT ${monthExpression(dialect)} AS month, SUM(net_revenue) AS revenue
 FROM orders
 WHERE status <> 'refunded'
 GROUP BY month
@@ -68,36 +78,43 @@ export async function generateSql(
   question: string,
   context: SchemaContext,
 ): Promise<GeneratedSql> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) return deterministicSql(question, context.dialect);
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: "gpt-4.1-mini",
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `You are a read-only text-to-SQL engine. Return JSON with sql, explanation, targetedTables, clarification. Never emit DDL/DML, never use SELECT *, always include LIMIT <= 500, obey ${context.dialect}. If the metric or grain is ambiguous, return an empty sql and a concise clarification. Schema:\n${schemaPrompt(context)}`,
-        },
-        { role: "user", content: question },
-      ],
-    }),
-  });
-  if (!response.ok) return deterministicSql(question, context.dialect);
-  const payload = (await response.json()) as { choices?: [{ message?: { content?: string } }] };
   try {
-    const parsed = JSON.parse(payload.choices?.[0]?.message?.content ?? "{}") as GeneratedSql;
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You are a read-only text-to-SQL engine. Return JSON with sql, explanation, targetedTables, clarification. Never emit DDL/DML, never use SELECT *, always include an outermost LIMIT <= ${MAX_ROW_LIMIT}, obey ${context.dialect}. If the metric or grain is ambiguous, return an empty sql and a concise clarification. Schema:\n${schemaPrompt(context)}`,
+          },
+          { role: "user", content: question },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      logger.warn({ status: response.status }, "SQL generation provider rejected the request; using the deterministic fallback");
+      return deterministicSql(question, context.dialect);
+    }
+
+    const payload = (await response.json()) as { choices?: [{ message?: { content?: string } }] };
+    const parsed = JSON.parse(payload.choices?.[0]?.message?.content ?? "{}") as Partial<GeneratedSql>;
     return {
-      sql: parsed.sql ?? "",
-      explanation: parsed.explanation ?? "",
-      targetedTables: parsed.targetedTables ?? [],
-      clarification: parsed.clarification ?? null,
+      sql: typeof parsed.sql === "string" ? parsed.sql : "",
+      explanation: typeof parsed.explanation === "string" ? parsed.explanation : "",
+      targetedTables: Array.isArray(parsed.targetedTables) ? parsed.targetedTables.map(String) : [],
+      clarification: typeof parsed.clarification === "string" && parsed.clarification ? parsed.clarification : null,
     };
-  } catch {
+  } catch (error) {
+    logger.warn({ err: error }, "SQL generation provider failed; using the deterministic fallback");
     return deterministicSql(question, context.dialect);
   }
 }
@@ -106,15 +123,19 @@ export function synthesizeInsight(question: string, result: { columns: string[];
   const isTimeSeries = result.columns.some((column) => /month|date|time|week/i.test(column));
   const dimension = result.columns.find((column) => !/revenue|count|amount|total|mrr|value/i.test(column));
   const measure = result.columns.find((column) => /revenue|count|amount|total|mrr|value/i.test(column));
-  const values = result.rows.map((row) => Number(row[measure ?? ""])).filter(Number.isFinite);
+  const values = result.rows.map((row) => {
+    const value = Number(row[measure ?? ""]);
+    return Number.isFinite(value) ? value : 0;
+  });
   const total = values.reduce((sum, value) => sum + value, 0);
-  const peak = Math.max(...values, 0);
-  const peakIndex = values.findIndex((value) => value === peak);
+  const peak = values.length > 0 ? Math.max(...values) : 0;
+  const peakIndex = values.indexOf(peak);
   const labels = result.rows.map((row) => String(row[dimension ?? result.columns[0]] ?? ""));
 
   if (result.rows.length === 1 && measure) {
+    const headline = Number(result.rows[0]?.[measure]);
     return {
-      insights: [`${measure.replaceAll("_", " ")} is ${values[0]?.toLocaleString() ?? "not available"} for this query.`],
+      insights: [`${measure.replaceAll("_", " ")} is ${Number.isFinite(headline) ? headline.toLocaleString() : "not available"} for this query.`],
       chartType: "kpi_card",
       echartsSpec: { title: { text: question }, series: [{ type: "gauge", data: [{ value: values[0] ?? 0 }] }] },
       confidence: 0.86,
@@ -124,7 +145,7 @@ export function synthesizeInsight(question: string, result: { columns: string[];
   return {
     insights: [
       `${result.rows.length} groups returned, covering ${measure ? total.toLocaleString() : "the selected breakdown"}.`,
-      peakIndex >= 0 ? `${labels[peakIndex]} is the leading group at ${peak.toLocaleString()}.` : "The result is ready for comparison.",
+      peakIndex >= 0 && labels[peakIndex] ? `${labels[peakIndex]} is the leading group at ${peak.toLocaleString()}.` : "The result is ready for comparison.",
       isTimeSeries ? "The result is ordered for trend analysis across the selected time grain." : "The result is ranked for contribution analysis.",
     ],
     chartType: isTimeSeries ? "line" : "bar",

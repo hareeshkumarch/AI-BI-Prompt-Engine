@@ -1,25 +1,17 @@
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Database, FileCode2, Filter, Gauge, HardDrive, Info, Loader2, Play, RefreshCw, Search, Server, Snowflake, Sparkles, Table2, Terminal, Timer, Bird, Wrench, XCircle } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Database, FileCode2, Filter, Gauge, Info, Loader2, Play, RefreshCw, Search, Server, Sparkles, Table2, Terminal, Timer, Wrench, XCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import { getGetQueryRunQueryKey, getGetStudioOverviewQueryKey, getListQueryRunsQueryKey, useCreateQueryRun, useGetQueryRun, useGetSchemaContext, useGetStudioOverview, useListConnections, useListQueryRuns, useRepairQueryRun } from '@workspace/api-client-react';
 import type { QueryRunInput, QueryRunInputDialect } from '@workspace/api-client-react';
-import { ConnectionMark, ConfidenceRing, DataResultTable, EmptyState, ErrorState, HealthBadge, LoadingBlock, MiniChart, QueryRunList, RunMeta, SchemaTableRow, SearchField, SectionHeading, SecurityNote, SelectField, Skeleton, Sparkline, StatCard, StatusPill, Trace, formatRelative } from '@/components/studio-ui';
-
-const dialectIcons: Record<string, React.ReactNode> = {
-  postgresql: <Database size={16} />,
-  mysql: <HardDrive size={16} />,
-  snowflake: <Snowflake size={16} />,
-  sqlite: <Terminal size={16} />,
-  duckdb: <Bird size={16} />,
-};
+import { ConnectionMark, ConfidenceRing, DataResultTable, EmptyState, ErrorState, HealthBadge, InsightChart, LoadingBlock, QueryRunList, RunMeta, SchemaTableRow, SearchField, SectionHeading, SecurityNote, SelectField, Sparkline, StatCard, StatusPill, Trace, dialectIcon, formatRelative, useDebouncedValue } from '@/components/studio-ui';
 
 const dialectOptions = [
-  { value: 'postgresql', label: 'PostgreSQL', icon: dialectIcons.postgresql, description: 'Advanced open-source RDBMS' },
-  { value: 'mysql', label: 'MySQL', icon: dialectIcons.mysql, description: 'Popular relational database' },
-  { value: 'snowflake', label: 'Snowflake', icon: dialectIcons.snowflake, description: 'Cloud data warehouse' },
-  { value: 'sqlite', label: 'SQLite', icon: dialectIcons.sqlite, description: 'Lightweight embedded engine' },
-  { value: 'duckdb', label: 'DuckDB', icon: dialectIcons.duckdb, description: 'In-process OLAP database' },
+  { value: 'postgresql', label: 'PostgreSQL', icon: dialectIcon('postgresql'), description: 'Advanced open-source RDBMS' },
+  { value: 'mysql', label: 'MySQL', icon: dialectIcon('mysql'), description: 'Popular relational database' },
+  { value: 'snowflake', label: 'Snowflake', icon: dialectIcon('snowflake'), description: 'Cloud data warehouse' },
+  { value: 'sqlite', label: 'SQLite', icon: dialectIcon('sqlite'), description: 'Lightweight embedded engine' },
+  { value: 'duckdb', label: 'DuckDB', icon: dialectIcon('duckdb'), description: 'In-process OLAP database' },
 ];
 
 function RichDialectSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -36,7 +28,7 @@ function RichDialectSelector({ value, onChange }: { value: string; onChange: (v:
 
   return <div ref={ref} className="relative">
     <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 rounded-sm border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40" data-testid="select-dialect">
-      <span className="flex items-center text-primary">{selected?.icon ?? <Terminal size={12} />}</span>
+      <span className="flex items-center text-primary">{selected?.icon ?? <Terminal size={16} />}</span>
       <span className="font-medium text-foreground">{selected?.label ?? 'Dialect'}</span>
       <ChevronDown size={12} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
@@ -69,10 +61,12 @@ export function WorkspacePage() {
   const [question, setQuestion] = useState('');
   const [mode, setMode] = useState<'analyst' | 'sql_only'>('analyst');
   const [dialect, setDialect] = useState<QueryRunInputDialect>('postgresql');
-  const activeConnection = overview.data?.activeConnection ?? connectionsQuery.data?.[0];
+  const [connectionId, setConnectionId] = useState('');
+  const connections = connectionsQuery.data?.length ? connectionsQuery.data : overview.data?.activeConnection ? [overview.data.activeConnection] : [];
+  const activeConnection = connections.find((connection) => connection.id === connectionId) ?? connections[0];
   const recentRuns = overview.data?.recentRuns ?? runsQuery.data ?? [];
 
-  const submitQuestion = (event: React.FormEvent) => {
+  const submitQuestion = (event: React.SyntheticEvent) => {
     event.preventDefault();
     if (!question.trim() || !activeConnection || createRun.isPending) return;
     createRun.mutate({ data: { question: question.trim(), connectionId: activeConnection.id, dialect, mode } satisfies QueryRunInput }, {
@@ -96,8 +90,8 @@ export function WorkspacePage() {
         <form onSubmit={submitQuestion} className="relative overflow-hidden rounded-sm border border-primary/30 bg-card shadow-sm">
           <div className="absolute inset-x-0 top-0 h-0.5 signal-line" />
           <div className="flex items-center justify-between border-b border-border px-5 py-3"><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground"><Sparkles size={14} className="text-primary" /> Natural language query</div><span className="mono text-[10px] text-muted-foreground">CTRL ↵ to run</span></div>
-          <textarea value={question} onChange={(event) => setQuestion(event.target.value)} className="min-h-[160px] w-full resize-none bg-transparent px-5 py-5 text-lg leading-8 outline-none placeholder:text-muted-foreground/45 sm:text-xl" placeholder="Ask a question about your data…" data-testid="input-question" />
-          <div className="flex flex-col gap-3 border-t border-border bg-muted/25 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-2"><label className="flex items-center gap-2 rounded-sm border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground"><Database size={12} className="text-primary" /><select defaultValue={activeConnection?.id ?? ''} disabled={!activeConnection} className="max-w-[150px] bg-transparent font-medium text-foreground outline-none" data-testid="select-connection"><option value={activeConnection?.id}>{activeConnection?.name ?? 'No connection'}</option></select></label><RichDialectSelector value={dialect} onChange={(v) => setDialect(v as QueryRunInputDialect)} /><button type="button" onClick={() => setMode(mode === 'analyst' ? 'sql_only' : 'analyst')} className={`rounded-sm border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${mode === 'analyst' ? 'border-primary/25 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground'}`} data-testid="button-toggle-mode">{mode === 'analyst' ? 'Analyst mode' : 'SQL only'}</button></div><button type="submit" disabled={!question.trim() || !activeConnection || createRun.isPending} className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-run-query">{createRun.isPending ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}{createRun.isPending ? 'Orchestrating…' : 'Run analysis'}</button></div>
+          <textarea value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') submitQuestion(event); }} className="min-h-[160px] w-full resize-none bg-transparent px-5 py-5 text-lg leading-8 outline-none placeholder:text-muted-foreground/45 sm:text-xl" placeholder="Ask a question about your data…" data-testid="input-question" />
+          <div className="flex flex-col gap-3 border-t border-border bg-muted/25 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap items-center gap-2"><label className="flex items-center gap-2 rounded-sm border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground"><Database size={12} className="text-primary" /><select value={activeConnection?.id ?? ''} onChange={(event) => setConnectionId(event.target.value)} disabled={connections.length === 0} className="max-w-[150px] bg-transparent font-medium text-foreground outline-none" data-testid="select-connection">{connections.length === 0 ? <option value="">No connection</option> : connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}</select></label><RichDialectSelector value={dialect} onChange={(v) => setDialect(v as QueryRunInputDialect)} /><button type="button" onClick={() => setMode(mode === 'analyst' ? 'sql_only' : 'analyst')} className={`rounded-sm border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${mode === 'analyst' ? 'border-primary/25 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground'}`} data-testid="button-toggle-mode">{mode === 'analyst' ? 'Analyst mode' : 'SQL only'}</button></div><button type="submit" disabled={!question.trim() || !activeConnection || createRun.isPending} className="inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-run-query">{createRun.isPending ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}{createRun.isPending ? 'Orchestrating…' : 'Run analysis'}</button></div>
           {createRun.isError && <div className="flex items-center gap-2 border-t border-destructive/20 bg-destructive/5 px-5 py-3 text-xs text-destructive"><XCircle size={14} /> The run could not be started. Check the connection and try again.</div>}
         </form>
         <div className="mt-4 flex flex-wrap items-center gap-2"><span className="mr-1 text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">Try asking</span>{quickQuestions.map((item) => <button key={item} type="button" onClick={() => setQuestion(item)} className="rounded-full border border-border bg-card px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/35 hover:bg-primary/5 hover:text-foreground" data-testid={`button-quick-question-${quickQuestions.indexOf(item)}`}>{item}</button>)}</div>
@@ -140,7 +134,7 @@ export function RunDetailPage() {
       <div className="space-y-5">
         <section className="rounded-sm border border-border bg-card"><div className="flex items-center justify-between border-b border-border px-5 py-3"><div className="flex items-center gap-2"><FileCode2 size={15} className="text-primary" /><span className="text-[10px] font-semibold uppercase tracking-[.16em]">Generated SQL</span></div><button type="button" onClick={() => void navigator.clipboard?.writeText(run.sql)} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground hover:text-primary" data-testid="button-copy-sql"><Copy size={12} /> Copy</button></div><pre className="max-h-[250px] overflow-auto whitespace-pre-wrap p-5 mono text-xs leading-6 text-foreground/80">{run.sql || 'No SQL was generated for this run.'}</pre><div className="border-t border-border bg-muted/25 px-5 py-3 text-xs leading-5 text-muted-foreground"><span className="font-semibold text-foreground">Why this query:</span> {run.sqlExplanation}</div></section>
         {run.result && <DataResultTable result={run.result} />}
-        {run.insight && <section className="rounded-sm border border-border bg-card p-5"><div className="flex items-start justify-between gap-4"><SectionHeading eyebrow="Synthesis" title="What the data says" detail={`${run.insight.chartType} visualization · ${run.insight.insights.length} observations`} /><ConfidenceRing value={run.insight.confidence} /></div><div className="grid gap-5 md:grid-cols-[1fr_1.2fr]"><div className="space-y-3">{run.insight.insights.map((insight, index) => <div key={insight} className="flex gap-3 text-xs leading-5"><span className="mono text-primary">0{index + 1}</span><p>{insight}</p></div>)}</div><div className="rounded-sm border border-border bg-muted/20 p-3"><MiniChart type={run.insight.chartType} /></div></div></section>}
+        {run.insight && <section className="rounded-sm border border-border bg-card p-5"><div className="flex items-start justify-between gap-4"><SectionHeading eyebrow="Synthesis" title="What the data says" detail={`${run.insight.chartType} visualization · ${run.insight.insights.length} observations`} /><ConfidenceRing value={run.insight.confidence} /></div><div className="grid gap-5 md:grid-cols-[1fr_1.2fr]"><div className="space-y-3">{run.insight.insights.map((insight, index) => <div key={insight} className="flex gap-3 text-xs leading-5"><span className="mono text-primary">0{index + 1}</span><p>{insight}</p></div>)}</div><div className="rounded-sm border border-border bg-muted/20 p-3">{run.result ? <InsightChart type={run.insight.chartType} result={run.result} /> : <p className="grid h-48 place-items-center text-xs text-muted-foreground">No result rows to visualize.</p>}</div></div></section>}
       </div>
     </div>
   </PageFrame>;
@@ -148,7 +142,8 @@ export function RunDetailPage() {
 
 export function SchemaPage() {
   const [search, setSearch] = useState('');
-  const schemaQuery = useGetSchemaContext(search ? { search } : undefined);
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const schemaQuery = useGetSchemaContext(debouncedSearch ? { search: debouncedSearch } : undefined);
   const schema = schemaQuery.data;
   const tokenPercent = schema ? Math.min(100, Math.round((schema.selectedTables / Math.max(schema.totalTables, 1)) * 100)) : 0;
 
@@ -163,11 +158,12 @@ export function SchemaPage() {
 export function ConnectionsPage() {
   const connectionsQuery = useListConnections();
   const connections = connectionsQuery.data ?? [];
-  const [defaultDialect, setDefaultDialect] = useState(connections[0]?.kind ?? 'postgresql');
+  const [dialectOverride, setDialectOverride] = useState('');
+  const defaultDialect = dialectOverride || connections[0]?.kind || 'postgresql';
   return <PageFrame eyebrow="Infrastructure" title="Connections." detail="Data sources, health signals, and the dialect each run will honor." action={<button type="button" onClick={() => void connectionsQuery.refetch()} className="inline-flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted" data-testid="button-refresh-connections"><RefreshCw size={13} /> Refresh health</button>}>
     {connectionsQuery.isLoading ? <div className="grid gap-4 md:grid-cols-2"><LoadingBlock lines={6} /><LoadingBlock lines={6} /></div> : connectionsQuery.isError ? <ErrorState onRetry={() => void connectionsQuery.refetch()} /> : connections.length === 0 ? <EmptyState icon={Server} title="No connections configured" detail="Add a relational connection in the workspace service to make it available for analysis." /> : <div className="grid gap-5 lg:grid-cols-[1fr_330px]">
       <section className="space-y-3 animate-enter-up delay-1">{connections.map((connection) => <article key={connection.id} className="rounded-sm border border-border bg-card p-5 transition-colors hover:border-primary/30" data-testid={`card-connection-${connection.id}`}><div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><ConnectionMark kind={connection.kind} /><div><h2 className="font-display text-base font-bold">{connection.name}</h2><p className="mt-1 mono text-[10px] text-muted-foreground">{connection.kind} · {connection.host}</p></div></div><HealthBadge healthy={connection.status === 'connected'} /></div><div className="mt-5 grid grid-cols-3 divide-x divide-border border-y border-border py-3"><div className="px-3 first:pl-0"><p className="text-[10px] uppercase tracking-[.12em] text-muted-foreground">Latency</p><p className="mt-1 font-display text-lg font-bold">{connection.latencyMs}<span className="ml-0.5 text-[10px] font-normal text-muted-foreground">ms</span></p></div><div className="px-3"><p className="text-[10px] uppercase tracking-[.12em] text-muted-foreground">Tables</p><p className="mt-1 font-display text-lg font-bold">{connection.tables}</p></div><div className="px-3"><p className="text-[10px] uppercase tracking-[.12em] text-muted-foreground">Dialect</p><p className="mt-1 truncate mono text-[11px] font-medium">{connection.kind}</p></div></div><div className="mt-4 flex items-center justify-between text-[10px] text-muted-foreground"><span>Last introspection</span><span className="mono">{formatRelative(connection.lastIntrospectedAt)}</span></div></article>)}</section>
-      <aside className="space-y-4 animate-enter-up delay-2"><section className="rounded-sm border border-border bg-card p-5"><SectionHeading eyebrow="Dialect configuration" title="SQL behavior" detail="Runs inherit the dialect configured for their active source." /><div className="space-y-3"><SelectField label="Default dialect" value={defaultDialect} onChange={(value) => setDefaultDialect(value as QueryRunInputDialect)} options={dialectOptions} /><div className="rounded-sm border border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground"><Info size={14} className="mb-2 text-primary" /><p>Dialect hints are passed to SQL generation and validation. They are never inferred from a question.</p></div></div></section><SecurityNote /></aside>
+      <aside className="space-y-4 animate-enter-up delay-2"><section className="rounded-sm border border-border bg-card p-5"><SectionHeading eyebrow="Dialect configuration" title="SQL behavior" detail="Runs inherit the dialect configured for their active source." /><div className="space-y-3"><SelectField label="Default dialect" value={defaultDialect} onChange={setDialectOverride} options={dialectOptions} /><div className="rounded-sm border border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground"><Info size={14} className="mb-2 text-primary" /><p>Dialect hints are passed to SQL generation and validation. They are never inferred from a question.</p></div></div></section><SecurityNote /></aside>
     </div>}
   </PageFrame>;
 }
