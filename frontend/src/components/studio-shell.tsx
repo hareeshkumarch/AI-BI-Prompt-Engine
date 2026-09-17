@@ -2,6 +2,7 @@ import { Compass, Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useGetStudioOverview } from '@workspace/api-client-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type StudioShellProps = { children: React.ReactNode };
 
@@ -26,9 +27,12 @@ export function StudioShell({ children }: StudioShellProps) {
           <span className="grid size-7 place-items-center rounded-sm bg-primary text-primary-foreground"><Database size={15} /></span>
           <span className="font-display text-sm font-bold tracking-tight">AI BI <span className="text-primary">Studio</span></span>
         </Link>
-        <button type="button" onClick={() => setMobileOpen((open) => !open)} className="rounded-sm p-2 text-muted-foreground hover:bg-muted" data-testid="button-mobile-menu" aria-label="Toggle navigation">
-          {mobileOpen ? <X size={19} /> : <Menu size={19} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button type="button" onClick={() => setMobileOpen((open) => !open)} className="rounded-sm p-2 text-muted-foreground hover:bg-muted" data-testid="button-mobile-menu" aria-label="Toggle navigation">
+            {mobileOpen ? <X size={19} /> : <Menu size={19} />}
+          </button>
+        </div>
       </header>
 
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -76,7 +80,7 @@ export function StudioShell({ children }: StudioShellProps) {
       <main className="min-h-[100dvh] md:pl-64">
         <div className="hidden h-16 items-center justify-between border-b border-border bg-card/70 px-8 md:flex">
           <div className="flex items-center gap-3 text-sm"><span className="text-muted-foreground">Studio</span><span className="text-border">/</span><span className="font-medium">{current}</span></div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground"><span className="mono">{overview ? `${overview.tableCount} tables · ${overview.queryCount} runs` : '—'}</span><span className="flex items-center gap-2"><span className={`size-1.5 rounded-full ${degraded ? 'bg-accent' : 'bg-primary'}`} />{overview ? (degraded ? 'Degraded performance' : 'All systems nominal') : 'Checking status…'}</span></div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground"><ThemeToggle /><span className="mono">{overview ? `${overview.tableCount} tables · ${overview.queryCount} runs` : '—'}</span><span className="flex items-center gap-2"><span className={`size-1.5 rounded-full ${degraded ? 'bg-accent' : 'bg-primary'}`} />{overview ? (degraded ? 'Degraded performance' : 'All systems nominal') : 'Checking status…'}</span></div>
         </div>
         <div className="pt-14 md:pt-0">{children}</div>
       </main>

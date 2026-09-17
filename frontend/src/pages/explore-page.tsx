@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Copy, Database, Gauge, Loader2, Play, Table2, Timer, X, Zap } from 'lucide-react';
 import { useGetSemanticModel, useRunExploreQuery } from '@workspace/api-client-react';
-import type { Aggregation, ChartEncoding, ExploreChannel, ExploreQueryResult, SemanticModelSummary } from '@workspace/api-client-react';
+import type { Aggregation, ChartEncoding, ExploreChannel, ExploreFilter, ExploreQueryResult, SemanticModelSummary } from '@workspace/api-client-react';
 import { ChartSwitcher, InsightChart } from '@/components/insight-chart';
 import { FieldPicker, isMeasure, metricAsField, type PickerField } from '@/components/field-picker';
+import { FilterBar } from '@/components/filter-bar';
 import { DataResultTable, EmptyState, ErrorState, LoadingBlock, ResultSchema, SectionHeading, useDebouncedValue } from '@/components/studio-ui';
 
 const GRAINS = ['hour', 'day', 'week', 'month', 'quarter', 'year'] as const;
+const ROW_LIMITS = [50, 200, 500, 1000] as const;
+const NO_VALUE_OPERATORS = ['is_null', 'is_not_null'];
+
+function isComplete(filter: ExploreFilter) {
+  if (NO_VALUE_OPERATORS.includes(filter.operator)) return true;
+  return filter.values.length > 0 && filter.values.every((value) => value !== '' && value !== null && value !== undefined);
+}
 
 type Selection = ExploreChannel & { label: string; role: string };
 
@@ -66,6 +74,8 @@ export function ExplorePage() {
   const runQuery = useRunExploreQuery();
   const [dimensions, setDimensions] = useState<Selection[]>([]);
   const [measures, setMeasures] = useState<Selection[]>([]);
+  const [filters, setFilters] = useState<ExploreFilter[]>([]);
+  const [limit, setLimit] = useState<number>(200);
   const [chartType, setChartType] = useState<string | null>(null);
   const [sqlOpen, setSqlOpen] = useState(false);
   const [response, setResponse] = useState<ExploreQueryResult | null>(null);
@@ -78,9 +88,10 @@ export function ExplorePage() {
       chartType,
       dimensions: dimensions.map(({ field, grain }) => ({ field, grain })),
       measures: measures.map(({ field, aggregation }) => ({ field, aggregation })),
-      limit: 200,
+      filters: filters.filter(isComplete),
+      limit,
     }),
-    [dimensions, measures, chartType],
+    [dimensions, measures, filters, chartType, limit],
   );
   const debouncedPayload = useDebouncedValue(JSON.stringify(payload), 250);
 
@@ -111,8 +122,8 @@ export function ExplorePage() {
     else setDimensions((current) => [...current, entry]);
   };
 
-  const fieldFor = (name: string) =>
-    model && ([...model.fields, ...model.metrics.map(metricAsField)] as PickerField[]).find((item) => item.name === name);
+  const allFields: PickerField[] = model ? [...model.fields, ...model.metrics.map(metricAsField)] : [];
+  const fieldFor = (name: string) => allFields.find((item) => item.name === name);
 
   const optionsFor = (selection: Selection) => {
     if (selection.role === 'TIME_DIMENSION') return GRAINS.map((grain) => ({ value: grain, label: grain }));
@@ -161,7 +172,7 @@ export function ExplorePage() {
         <section className="min-w-0 space-y-4">
           <div className="rounded-sm border border-border bg-card p-4">
             <div className="flex flex-wrap items-start gap-4">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-[260px]">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Group by</p>
                 <div className="flex min-h-[28px] flex-wrap items-center gap-1.5">
                   {dimensions.length === 0 && <span className="text-[11px] text-muted-foreground/70">Add a dimension from the left</span>}
@@ -172,7 +183,7 @@ export function ExplorePage() {
                   ))}
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-[260px]">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Measure</p>
                 <div className="flex min-h-[28px] flex-wrap items-center gap-1.5">
                   {measures.length === 0 && <span className="text-[11px] text-muted-foreground/70">Add a measure from the left</span>}
@@ -185,6 +196,8 @@ export function ExplorePage() {
               </div>
             </div>
           </div>
+
+          <FilterBar filters={filters} fields={allFields.filter((field) => !isMeasure(field))} onChange={setFilters} />
 
           {!hasSelection && (
             <EmptyState icon={Play} title="Pick a field to start" detail="Every selection compiles to SQL, runs on the engine, and comes back aggregated — raw rows never reach the browser." />
@@ -209,11 +222,25 @@ export function ExplorePage() {
                     <Stat icon={Timer} label="Total time" value={`${response.stats.queryTimeMs}ms`} />
                     <Stat icon={Table2} label="Rows returned" value={`${response.stats.rowsReturned} rows`} />
                     <Stat icon={Gauge} label="Payload" value={formatBytes(response.stats.bytesReturned)} />
-                    {runQuery.isPending && <Loader2 size={13} className="animate-spin text-primary" />}
+                    <label className="flex items-center gap-1.5" title="Maximum rows returned">
+                      <span className="sr-only">Row limit</span>
+                      <select value={limit} onChange={(event) => setLimit(Number(event.target.value))} className="mono cursor-pointer rounded-sm border border-input bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground outline-none focus:border-primary" data-testid="select-limit">
+                        {ROW_LIMITS.map((option) => <option key={option} value={option}>{option} max</option>)}
+                      </select>
+                    </label>
                   </div>
                 </div>
-                <div className="rounded-sm border border-border bg-muted/20 p-3">
-                  {encoding && <InsightChart encoding={encoding} result={response.result} height={260} />}
+                <div className="relative rounded-sm border border-border bg-muted/20 p-3">
+                  <div className={`transition-opacity duration-150 ${runQuery.isPending ? 'opacity-40' : 'opacity-100'}`}>
+                    {encoding && <InsightChart encoding={encoding} result={response.result} height={260} />}
+                  </div>
+                  {runQuery.isPending && (
+                    <div className="absolute inset-0 grid place-items-center" aria-live="polite" data-testid="chart-pending">
+                      <span className="inline-flex items-center gap-2 rounded-sm border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground shadow-sm">
+                        <Loader2 size={12} className="animate-spin text-primary" /> Running…
+                      </span>
+                    </div>
+                  )}
                 </div>
               </section>
 

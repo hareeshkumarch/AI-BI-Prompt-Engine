@@ -144,37 +144,6 @@ export function SearchField({ value, onChange, placeholder }: { value: string; o
   return <label className="flex items-center gap-2 rounded-sm border border-input bg-card px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10"><Search size={15} className="shrink-0 text-muted-foreground" /><input value={value} onChange={(event) => onChange(event.target.value)} className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground/70" placeholder={placeholder} data-testid="input-search" /></label>;
 }
 
-export function SelectField({ value, onChange, options, label }: { value: string; onChange: (value: string) => void; options: { value: string; label: string; icon?: React.ReactNode; description?: string }[]; label: string }) {
-  const selected = options.find((o) => o.value === value);
-  const [open, setOpen] = useState(false);
-  return <div className="relative block" data-testid={`select-${label.toLowerCase().replaceAll(' ', '-')}`}>
-    <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">{label}</span>
-    <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-2.5 rounded-sm border border-input bg-card px-3 py-2.5 text-left text-xs outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 hover:border-primary/40">
-      {selected?.icon && <span className="flex shrink-0 items-center text-primary">{selected.icon}</span>}
-      <span className="flex-1">
-        <span className="block font-medium text-foreground">{selected?.label ?? 'Select…'}</span>
-        {selected?.description && <span className="mt-0.5 block text-[10px] text-muted-foreground">{selected.description}</span>}
-      </span>
-      <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-    </button>
-    {open && <>
-      <button type="button" onClick={() => setOpen(false)} className="fixed inset-0 z-40" aria-label="Close dropdown" />
-      <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-sm border border-border bg-popover shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
-        {options.map((option) => (
-          <button key={option.value} type="button" onClick={() => { onChange(option.value); setOpen(false); }} className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs transition-colors hover:bg-primary/5 ${option.value === value ? 'bg-primary/8' : ''}`}>
-            {option.icon && <span className={`flex shrink-0 items-center ${option.value === value ? 'text-primary' : 'text-muted-foreground'}`}>{option.icon}</span>}
-            <span className="flex-1">
-              <span className={`block font-medium ${option.value === value ? 'text-primary' : 'text-foreground'}`}>{option.label}</span>
-              {option.description && <span className="mt-0.5 block text-[10px] text-muted-foreground">{option.description}</span>}
-            </span>
-            {option.value === value && <Check size={14} className="shrink-0 text-primary" />}
-          </button>
-        ))}
-      </div>
-    </>}
-  </div>;
-}
-
 export function HealthBadge({ healthy }: { healthy: boolean }) {
   return <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[.1em] ${healthy ? 'text-primary' : 'text-destructive'}`}><span className={`size-1.5 rounded-full ${healthy ? 'bg-primary' : 'bg-destructive'}`} />{healthy ? 'Healthy' : 'Attention'}</span>;
 }
