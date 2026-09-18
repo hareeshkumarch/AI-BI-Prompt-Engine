@@ -20,6 +20,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddPageInput,
+  AddWidgetInput,
+  CreateDashboardInput,
+  Dashboard,
+  DashboardSummary,
   DataConnection,
   ErrorResponse,
   ExploreQueryInput,
@@ -29,10 +34,13 @@ import type {
   QueryRun,
   QueryRunInput,
   QueryRunSummary,
+  ReorderWidgetsInput,
   RepairRunInput,
   SchemaContext,
   SemanticModelSummary,
-  StudioOverview
+  StudioOverview,
+  UpdateDashboardInput,
+  UpdateWidgetInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -139,6 +147,931 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getListDashboardsUrl = () => {
+
+
+
+
+  return `/api/dashboards`
+}
+
+/**
+ * @summary List dashboards
+ */
+export const listDashboards = async ( options?: Parameters<typeof customFetch>[1]): Promise<DashboardSummary[]> => {
+
+  return customFetch<DashboardSummary[]>(getListDashboardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDashboardsQueryKey = () => {
+    return [
+    `/api/dashboards`
+    ] as const;
+    }
+
+
+export const getListDashboardsQueryOptions = <TData = Awaited<ReturnType<typeof listDashboards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDashboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDashboardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDashboards>>> = ({ signal }) => listDashboards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDashboards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDashboardsQueryResult = NonNullable<Awaited<ReturnType<typeof listDashboards>>>
+export type ListDashboardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List dashboards
+ */
+
+export function useListDashboards<TData = Awaited<ReturnType<typeof listDashboards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDashboards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDashboardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDashboardUrl = () => {
+
+
+
+
+  return `/api/dashboards`
+}
+
+/**
+ * @summary Create a dashboard
+ */
+export const createDashboard = async (createDashboardInput: CreateDashboardInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getCreateDashboardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createDashboardInput)
+  }
+);}
+
+
+
+
+
+export const getCreateDashboardMutationKey = () => ['createDashboard'] as const;
+
+export const getCreateDashboardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDashboard>>, TError,CreateDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDashboard>>, TError,CreateDashboardMutationVariables, TContext> => {
+
+const mutationKey = getCreateDashboardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDashboard>>, CreateDashboardMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDashboard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDashboardMutationResult = NonNullable<Awaited<ReturnType<typeof createDashboard>>>
+    export type CreateDashboardMutationBody = BodyType<CreateDashboardInput>
+    export type CreateDashboardMutationError = ErrorType<unknown>
+    export type CreateDashboardMutationVariables = {data: BodyType<CreateDashboardInput>}
+
+    /**
+ * @summary Create a dashboard
+ */
+export const useCreateDashboard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDashboard>>, TError,CreateDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDashboard>>,
+        TError,
+        CreateDashboardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateDashboardMutationOptions(options));
+    }
+
+export const getGetDashboardUrl = (dashboardId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}`
+}
+
+/**
+ * @summary Get a dashboard
+ */
+export const getDashboard = async (dashboardId: string, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+  return customFetch<Dashboard>(getGetDashboardUrl(dashboardId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDashboardQueryKey = (dashboardId: string,) => {
+    return [
+    `/api/dashboards/${dashboardId}`
+    ] as const;
+    }
+
+
+export const getGetDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getDashboard>>, TError = ErrorType<ErrorResponse>>(dashboardId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardQueryKey(dashboardId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboard>>> = ({ signal }) => getDashboard(dashboardId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: dashboardId !== null && dashboardId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboard>>>
+export type GetDashboardQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a dashboard
+ */
+
+export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>, TError = ErrorType<ErrorResponse>>(
+ dashboardId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardQueryOptions(dashboardId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateDashboardUrl = (dashboardId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}`
+}
+
+/**
+ * @summary Update dashboard settings
+ */
+export const updateDashboard = async (dashboardId: string,
+    updateDashboardInput: UpdateDashboardInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getUpdateDashboardUrl(dashboardId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateDashboardInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateDashboardMutationKey = () => ['updateDashboard'] as const;
+
+export const getUpdateDashboardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDashboard>>, TError,UpdateDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDashboard>>, TError,UpdateDashboardMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDashboardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDashboard>>, UpdateDashboardMutationVariables> = (props) => {
+          const {dashboardId,data} = props ?? {};
+
+          return  updateDashboard(dashboardId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDashboardMutationResult = NonNullable<Awaited<ReturnType<typeof updateDashboard>>>
+    export type UpdateDashboardMutationBody = BodyType<UpdateDashboardInput>
+    export type UpdateDashboardMutationError = ErrorType<unknown>
+    export type UpdateDashboardMutationVariables = {dashboardId: string;data: BodyType<UpdateDashboardInput>}
+
+    /**
+ * @summary Update dashboard settings
+ */
+export const useUpdateDashboard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDashboard>>, TError,UpdateDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDashboard>>,
+        TError,
+        UpdateDashboardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDashboardMutationOptions(options));
+    }
+
+export const getDeleteDashboardUrl = (dashboardId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}`
+}
+
+/**
+ * @summary Delete a dashboard
+ */
+export const deleteDashboard = async (dashboardId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteDashboardUrl(dashboardId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteDashboardMutationKey = () => ['deleteDashboard'] as const;
+
+export const getDeleteDashboardMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDashboard>>, TError,DeleteDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDashboard>>, TError,DeleteDashboardMutationVariables, TContext> => {
+
+const mutationKey = getDeleteDashboardMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDashboard>>, DeleteDashboardMutationVariables> = (props) => {
+          const {dashboardId} = props ?? {};
+
+          return  deleteDashboard(dashboardId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDashboardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDashboard>>>
+
+    export type DeleteDashboardMutationError = ErrorType<ErrorResponse>
+    export type DeleteDashboardMutationVariables = {dashboardId: string}
+
+    /**
+ * @summary Delete a dashboard
+ */
+export const useDeleteDashboard = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDashboard>>, TError,DeleteDashboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDashboard>>,
+        TError,
+        DeleteDashboardMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteDashboardMutationOptions(options));
+    }
+
+export const getAddDashboardPageUrl = (dashboardId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages`
+}
+
+/**
+ * @summary Add a page
+ */
+export const addDashboardPage = async (dashboardId: string,
+    addPageInput: AddPageInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getAddDashboardPageUrl(dashboardId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(addPageInput)
+  }
+);}
+
+
+
+
+
+export const getAddDashboardPageMutationKey = () => ['addDashboardPage'] as const;
+
+export const getAddDashboardPageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addDashboardPage>>, TError,AddDashboardPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addDashboardPage>>, TError,AddDashboardPageMutationVariables, TContext> => {
+
+const mutationKey = getAddDashboardPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addDashboardPage>>, AddDashboardPageMutationVariables> = (props) => {
+          const {dashboardId,data} = props ?? {};
+
+          return  addDashboardPage(dashboardId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddDashboardPageMutationResult = NonNullable<Awaited<ReturnType<typeof addDashboardPage>>>
+    export type AddDashboardPageMutationBody = BodyType<AddPageInput>
+    export type AddDashboardPageMutationError = ErrorType<unknown>
+    export type AddDashboardPageMutationVariables = {dashboardId: string;data: BodyType<AddPageInput>}
+
+    /**
+ * @summary Add a page
+ */
+export const useAddDashboardPage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addDashboardPage>>, TError,AddDashboardPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addDashboardPage>>,
+        TError,
+        AddDashboardPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddDashboardPageMutationOptions(options));
+    }
+
+export const getAddDashboardWidgetUrl = (dashboardId: string,
+    pageId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/widgets`
+}
+
+/**
+ * @summary Add a widget to a page
+ */
+export const addDashboardWidget = async (dashboardId: string,
+    pageId: string,
+    addWidgetInput: AddWidgetInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getAddDashboardWidgetUrl(dashboardId,pageId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(addWidgetInput)
+  }
+);}
+
+
+
+
+
+export const getAddDashboardWidgetMutationKey = () => ['addDashboardWidget'] as const;
+
+export const getAddDashboardWidgetMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addDashboardWidget>>, TError,AddDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addDashboardWidget>>, TError,AddDashboardWidgetMutationVariables, TContext> => {
+
+const mutationKey = getAddDashboardWidgetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addDashboardWidget>>, AddDashboardWidgetMutationVariables> = (props) => {
+          const {dashboardId,pageId,data} = props ?? {};
+
+          return  addDashboardWidget(dashboardId,pageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddDashboardWidgetMutationResult = NonNullable<Awaited<ReturnType<typeof addDashboardWidget>>>
+    export type AddDashboardWidgetMutationBody = BodyType<AddWidgetInput>
+    export type AddDashboardWidgetMutationError = ErrorType<ErrorResponse>
+    export type AddDashboardWidgetMutationVariables = {dashboardId: string;pageId: string;data: BodyType<AddWidgetInput>}
+
+    /**
+ * @summary Add a widget to a page
+ */
+export const useAddDashboardWidget = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addDashboardWidget>>, TError,AddDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addDashboardWidget>>,
+        TError,
+        AddDashboardWidgetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddDashboardWidgetMutationOptions(options));
+    }
+
+export const getReorderDashboardWidgetsUrl = (dashboardId: string,
+    pageId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/widgets`
+}
+
+/**
+ * @summary Reorder the widgets on a page
+ */
+export const reorderDashboardWidgets = async (dashboardId: string,
+    pageId: string,
+    reorderWidgetsInput: ReorderWidgetsInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getReorderDashboardWidgetsUrl(dashboardId,pageId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderWidgetsInput)
+  }
+);}
+
+
+
+
+
+export const getReorderDashboardWidgetsMutationKey = () => ['reorderDashboardWidgets'] as const;
+
+export const getReorderDashboardWidgetsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderDashboardWidgets>>, TError,ReorderDashboardWidgetsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderDashboardWidgets>>, TError,ReorderDashboardWidgetsMutationVariables, TContext> => {
+
+const mutationKey = getReorderDashboardWidgetsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderDashboardWidgets>>, ReorderDashboardWidgetsMutationVariables> = (props) => {
+          const {dashboardId,pageId,data} = props ?? {};
+
+          return  reorderDashboardWidgets(dashboardId,pageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderDashboardWidgetsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderDashboardWidgets>>>
+    export type ReorderDashboardWidgetsMutationBody = BodyType<ReorderWidgetsInput>
+    export type ReorderDashboardWidgetsMutationError = ErrorType<unknown>
+    export type ReorderDashboardWidgetsMutationVariables = {dashboardId: string;pageId: string;data: BodyType<ReorderWidgetsInput>}
+
+    /**
+ * @summary Reorder the widgets on a page
+ */
+export const useReorderDashboardWidgets = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderDashboardWidgets>>, TError,ReorderDashboardWidgetsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderDashboardWidgets>>,
+        TError,
+        ReorderDashboardWidgetsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReorderDashboardWidgetsMutationOptions(options));
+    }
+
+export const getUpdateDashboardWidgetUrl = (dashboardId: string,
+    pageId: string,
+    widgetId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/widgets/${widgetId}`
+}
+
+/**
+ * @summary Update a widget
+ */
+export const updateDashboardWidget = async (dashboardId: string,
+    pageId: string,
+    widgetId: string,
+    updateWidgetInput: UpdateWidgetInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getUpdateDashboardWidgetUrl(dashboardId,pageId,widgetId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateWidgetInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateDashboardWidgetMutationKey = () => ['updateDashboardWidget'] as const;
+
+export const getUpdateDashboardWidgetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDashboardWidget>>, TError,UpdateDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDashboardWidget>>, TError,UpdateDashboardWidgetMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDashboardWidgetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDashboardWidget>>, UpdateDashboardWidgetMutationVariables> = (props) => {
+          const {dashboardId,pageId,widgetId,data} = props ?? {};
+
+          return  updateDashboardWidget(dashboardId,pageId,widgetId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDashboardWidgetMutationResult = NonNullable<Awaited<ReturnType<typeof updateDashboardWidget>>>
+    export type UpdateDashboardWidgetMutationBody = BodyType<UpdateWidgetInput>
+    export type UpdateDashboardWidgetMutationError = ErrorType<unknown>
+    export type UpdateDashboardWidgetMutationVariables = {dashboardId: string;pageId: string;widgetId: string;data: BodyType<UpdateWidgetInput>}
+
+    /**
+ * @summary Update a widget
+ */
+export const useUpdateDashboardWidget = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDashboardWidget>>, TError,UpdateDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDashboardWidget>>,
+        TError,
+        UpdateDashboardWidgetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDashboardWidgetMutationOptions(options));
+    }
+
+export const getDeleteDashboardWidgetUrl = (dashboardId: string,
+    pageId: string,
+    widgetId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/widgets/${widgetId}`
+}
+
+/**
+ * @summary Remove a widget
+ */
+export const deleteDashboardWidget = async (dashboardId: string,
+    pageId: string,
+    widgetId: string, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+  return customFetch<Dashboard>(getDeleteDashboardWidgetUrl(dashboardId,pageId,widgetId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteDashboardWidgetMutationKey = () => ['deleteDashboardWidget'] as const;
+
+export const getDeleteDashboardWidgetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDashboardWidget>>, TError,DeleteDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDashboardWidget>>, TError,DeleteDashboardWidgetMutationVariables, TContext> => {
+
+const mutationKey = getDeleteDashboardWidgetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDashboardWidget>>, DeleteDashboardWidgetMutationVariables> = (props) => {
+          const {dashboardId,pageId,widgetId} = props ?? {};
+
+          return  deleteDashboardWidget(dashboardId,pageId,widgetId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDashboardWidgetMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDashboardWidget>>>
+
+    export type DeleteDashboardWidgetMutationError = ErrorType<unknown>
+    export type DeleteDashboardWidgetMutationVariables = {dashboardId: string;pageId: string;widgetId: string}
+
+    /**
+ * @summary Remove a widget
+ */
+export const useDeleteDashboardWidget = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDashboardWidget>>, TError,DeleteDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDashboardWidget>>,
+        TError,
+        DeleteDashboardWidgetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteDashboardWidgetMutationOptions(options));
+    }
+
+export const getDuplicateDashboardWidgetUrl = (dashboardId: string,
+    pageId: string,
+    widgetId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/widgets/${widgetId}/duplicate`
+}
+
+/**
+ * @summary Duplicate a widget
+ */
+export const duplicateDashboardWidget = async (dashboardId: string,
+    pageId: string,
+    widgetId: string, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+  return customFetch<Dashboard>(getDuplicateDashboardWidgetUrl(dashboardId,pageId,widgetId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDuplicateDashboardWidgetMutationKey = () => ['duplicateDashboardWidget'] as const;
+
+export const getDuplicateDashboardWidgetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDashboardWidget>>, TError,DuplicateDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateDashboardWidget>>, TError,DuplicateDashboardWidgetMutationVariables, TContext> => {
+
+const mutationKey = getDuplicateDashboardWidgetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateDashboardWidget>>, DuplicateDashboardWidgetMutationVariables> = (props) => {
+          const {dashboardId,pageId,widgetId} = props ?? {};
+
+          return  duplicateDashboardWidget(dashboardId,pageId,widgetId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateDashboardWidgetMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateDashboardWidget>>>
+
+    export type DuplicateDashboardWidgetMutationError = ErrorType<unknown>
+    export type DuplicateDashboardWidgetMutationVariables = {dashboardId: string;pageId: string;widgetId: string}
+
+    /**
+ * @summary Duplicate a widget
+ */
+export const useDuplicateDashboardWidget = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDashboardWidget>>, TError,DuplicateDashboardWidgetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateDashboardWidget>>,
+        TError,
+        DuplicateDashboardWidgetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDuplicateDashboardWidgetMutationOptions(options));
+    }
 
 export const getGetStudioOverviewUrl = () => {
 

@@ -46,3 +46,6 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# local dashboard store
+.data

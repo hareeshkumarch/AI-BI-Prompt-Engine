@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: dashboards
+    description: Dashboard, page and widget management
   - name: studio
     description: AI BI Studio workspace operations
 paths:
@@ -26,6 +28,240 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboards:
+    get:
+      operationId: listDashboards
+      tags: [dashboards]
+      summary: List dashboards
+      responses:
+        "200":
+          description: Dashboards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DashboardSummary"
+    post:
+      operationId: createDashboard
+      tags: [dashboards]
+      summary: Create a dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDashboardInput"
+      responses:
+        "201":
+          description: Created dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /dashboards/{dashboardId}:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getDashboard
+      tags: [dashboards]
+      summary: Get a dashboard
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateDashboard
+      tags: [dashboards]
+      summary: Update dashboard settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDashboardInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+    delete:
+      operationId: deleteDashboard
+      tags: [dashboards]
+      summary: Delete a dashboard
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /dashboards/{dashboardId}/pages:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: addDashboardPage
+      tags: [dashboards]
+      summary: Add a page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPageInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /dashboards/{dashboardId}/pages/{pageId}/widgets:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: addDashboardWidget
+      tags: [dashboards]
+      summary: Add a widget to a page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddWidgetInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "400":
+          description: Invalid widget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: reorderDashboardWidgets
+      tags: [dashboards]
+      summary: Reorder the widgets on a page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderWidgetsInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /dashboards/{dashboardId}/pages/{pageId}/widgets/{widgetId}:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: widgetId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateDashboardWidget
+      tags: [dashboards]
+      summary: Update a widget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWidgetInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+    delete:
+      operationId: deleteDashboardWidget
+      tags: [dashboards]
+      summary: Remove a widget
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /dashboards/{dashboardId}/pages/{pageId}/widgets/{widgetId}/duplicate:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: widgetId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: duplicateDashboardWidget
+      tags: [dashboards]
+      summary: Duplicate a widget
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
   /studio/overview:
     get:
       operationId: getStudioOverview
@@ -355,6 +591,176 @@ components:
         truncated:
           type: boolean
       required: [columns, rows, rowCount, truncated]
+    WidgetSize:
+      type: string
+      enum: [small, medium, large, full]
+    WidgetQuery:
+      type: object
+      properties:
+        dimensions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreChannel"
+        measures:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreChannel"
+        filters:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreFilter"
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExploreSort"
+        limit:
+          type: integer
+      required: [dimensions, measures, filters, sort, limit]
+    Widget:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        chartType:
+          type: ["string", "null"]
+        size:
+          $ref: "#/components/schemas/WidgetSize"
+        position:
+          type: integer
+        query:
+          $ref: "#/components/schemas/WidgetQuery"
+      required: [id, title, chartType, size, position, query]
+    DashboardPage:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        widgets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Widget"
+      required: [id, name, position, widgets]
+    RefreshMode:
+      type: string
+      enum: [manual, interval]
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        modelId:
+          type: string
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardPage"
+        refreshMode:
+          $ref: "#/components/schemas/RefreshMode"
+        refreshIntervalSeconds:
+          type: integer
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        [id, name, description, modelId, pages, refreshMode, refreshIntervalSeconds, version, createdAt, updatedAt]
+    DashboardSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        modelId:
+          type: string
+        refreshMode:
+          $ref: "#/components/schemas/RefreshMode"
+        refreshIntervalSeconds:
+          type: integer
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        pageCount:
+          type: integer
+        widgetCount:
+          type: integer
+      required:
+        [id, name, description, modelId, refreshMode, refreshIntervalSeconds, version, createdAt, updatedAt, pageCount, widgetCount]
+    CreateDashboardInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    UpdateDashboardInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        refreshMode:
+          $ref: "#/components/schemas/RefreshMode"
+        refreshIntervalSeconds:
+          type: integer
+    AddPageInput:
+      type: object
+      properties:
+        name:
+          type: string
+    AddWidgetInput:
+      type: object
+      properties:
+        title:
+          type: string
+        chartType:
+          type: ["string", "null"]
+        size:
+          $ref: "#/components/schemas/WidgetSize"
+        query:
+          $ref: "#/components/schemas/WidgetQuery"
+      required: [query]
+    UpdateWidgetInput:
+      type: object
+      properties:
+        title:
+          type: string
+        chartType:
+          type: ["string", "null"]
+        size:
+          $ref: "#/components/schemas/WidgetSize"
+        query:
+          $ref: "#/components/schemas/WidgetQuery"
+    ReorderWidgetsInput:
+      type: object
+      properties:
+        order:
+          type: array
+          items:
+            type: string
+      required: [order]
     Aggregation:
       type: string
       enum: [sum, avg, min, max, count, count_distinct, median, p90, p95, none]

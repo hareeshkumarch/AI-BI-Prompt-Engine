@@ -15,6 +15,7 @@ An AI-native Business Intelligence workspace that turns plain-English questions 
 
 - **Semantic Layer** — Charts address business fields (`net_revenue`), never physical columns (`orders.total_amount`); each field carries its role, semantic type, allowed aggregations and formatting
 - **Server-Side Aggregation** — Field selections compile to parameterized SQL and aggregate on the engine; only the result reaches the browser
+- **Dashboards** — Save a query from Explore as a widget; each widget re-runs its own query independently rather than caching a rendered picture
 
 ## 🏗️ Architecture
 
@@ -100,6 +101,16 @@ caller-driven cancellation — closing the HTTP connection aborts the in-flight 
 `/explore` is the semantic layer made visible: pick fields, and each change compiles, executes and
 re-charts. The generated SQL, the engine timings, the rows returned and the payload size are all on
 screen, so it is always clear what ran and what came back.
+
+### Dashboards
+
+`/dashboards` holds saved arrangements. A widget stores a *field selection*, not a result, so opening
+a dashboard re-runs every widget against the current data. Each widget fetches independently, so one
+slow query never blocks the rest, and each reports its own engine timing and row count.
+
+Dashboards persist to `DASHBOARD_STORE_PATH` (default `.data/dashboards.json`), written atomically
+through a temp file and a rename. Set it to an empty string to keep them in memory only. Every edit
+bumps a version and retains the previous one, up to twenty revisions.
 
 ## 📊 Chart selection
 
@@ -232,6 +243,7 @@ pnpm run codegen
 | `DATA_ENGINE`       | `duckdb` (default) or `postgres`                       | `duckdb`         |
 | `QUERY_TIMEOUT_MS`  | Statement timeout for every query                      | `15000`          |
 | `QUERY_MAX_ROWS`    | Hard ceiling on rows returned to the caller            | `5000`           |
+| `DASHBOARD_STORE_PATH` | Where dashboards are persisted; empty for memory only | `.data/dashboards.json` |
 
 ### Frontend
 
