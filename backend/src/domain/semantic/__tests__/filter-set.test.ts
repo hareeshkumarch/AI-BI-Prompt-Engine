@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { demoSemanticModel } from "../demo-warehouse";
 import { channel, createChartSpec } from "../chart-spec";
 import { compileQuery } from "../query-compiler";
-import { emptyFilterSet, fieldsInSet, mergeFilterSets, toFilterNode, withoutField, type FilterSet } from "../filter-set";
+import { emptyFilterSet, fieldsInSet, toFilterNode, withoutField, type FilterSet } from "../filter-set";
 
 const compile = (filters: FilterSet) =>
   compileQuery(
@@ -120,27 +120,5 @@ describe("set helpers", () => {
     const without = withoutField(set, "status");
     expect(fieldsInSet(without)).toEqual(["segment"]);
     expect(without.groups).toEqual([]);
-  });
-
-  it("merges scoped sets into a single AND", () => {
-    const merged = mergeFilterSets(
-      { combinator: "and", clauses: [{ kind: "condition", field: "segment", operator: "eq", values: ["enterprise"] }] },
-      { combinator: "and", clauses: [{ kind: "condition", field: "status", operator: "neq", values: ["refunded"] }] },
-    );
-    expect(merged.combinator).toBe("and");
-    expect(merged.clauses).toHaveLength(2);
-  });
-
-  it("preserves an OR set as a group when merging", () => {
-    const merged = mergeFilterSets(
-      { combinator: "and", clauses: [{ kind: "condition", field: "segment", operator: "eq", values: ["enterprise"] }] },
-      { combinator: "or", clauses: [
-        { kind: "condition", field: "status", operator: "eq", values: ["paid"] },
-        { kind: "condition", field: "status", operator: "eq", values: ["fulfilled"] },
-      ] },
-    );
-    expect(merged.clauses).toHaveLength(1);
-    expect(merged.groups).toHaveLength(1);
-    expect(merged.groups![0]!.combinator).toBe("or");
   });
 });

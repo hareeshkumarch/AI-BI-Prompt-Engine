@@ -38,7 +38,7 @@ export const emptyFilterSet = (): FilterSet => ({ combinator: "and", clauses: []
 
 const NO_VALUE: ComparisonOperator[] = ["is_null", "is_not_null"];
 
-export function isComplete(clause: FilterClause) {
+function isComplete(clause: FilterClause) {
   if (clause.kind === "condition") {
     if (NO_VALUE.includes(clause.operator)) return true;
     return clause.values.length > 0 && clause.values.every((value) => value !== "" && value !== null && value !== undefined);
@@ -98,20 +98,5 @@ export function withoutField(set: FilterSet | null | undefined, field: string): 
     groups: (set.groups ?? [])
       .map((group) => ({ ...group, clauses: group.clauses.filter(keep) }))
       .filter((group) => group.clauses.length > 0),
-  };
-}
-
-export function mergeFilterSets(...sets: (FilterSet | null | undefined)[]): FilterSet {
-  const present = sets.filter((set): set is FilterSet => !!set);
-  return {
-    combinator: "and",
-    clauses: present.flatMap((set) => (set.combinator === "and" && !set.negate ? set.clauses : [])),
-    groups: [
-      ...present.flatMap((set) => set.groups ?? []),
-      ...present
-        .filter((set) => set.combinator === "or" || set.negate)
-        .map((set) => ({ combinator: set.combinator, negate: set.negate, clauses: set.clauses }))
-        .filter((group) => group.clauses.length > 0),
-    ],
   };
 }
