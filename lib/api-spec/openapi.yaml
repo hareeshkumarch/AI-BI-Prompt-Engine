@@ -113,6 +113,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /dashboards/{dashboardId}/filters:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: setDashboardFilters
+      tags: [dashboards]
+      summary: Replace the dashboard-wide filters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFiltersInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /dashboards/{dashboardId}/pages/{pageId}/filters:
+    parameters:
+      - name: dashboardId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: pageId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: setPageFilters
+      tags: [dashboards]
+      summary: Replace the filters for one page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFiltersInput"
+      responses:
+        "200":
+          description: Updated dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
   /dashboards/{dashboardId}/pages:
     parameters:
       - name: dashboardId
@@ -343,6 +396,30 @@ paths:
                 $ref: "#/components/schemas/ExploreQueryResult"
         "400":
           description: The selection is not valid or could not be compiled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /studio/filter-values:
+    post:
+      operationId: getFilterValues
+      tags: [studio]
+      summary: Distinct values for a field, narrowed by the other filters in scope
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilterValuesInput"
+      responses:
+        "200":
+          description: Values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilterValuesResult"
+        "400":
+          description: Unknown or non-dimensional field
           content:
             application/json:
               schema:
@@ -606,9 +683,7 @@ components:
           items:
             $ref: "#/components/schemas/ExploreChannel"
         filters:
-          type: array
-          items:
-            $ref: "#/components/schemas/ExploreFilter"
+          $ref: "#/components/schemas/FilterSet"
         sort:
           type: array
           items:
@@ -641,11 +716,13 @@ components:
           type: string
         position:
           type: integer
+        filters:
+          $ref: "#/components/schemas/FilterSet"
         widgets:
           type: array
           items:
             $ref: "#/components/schemas/Widget"
-      required: [id, name, position, widgets]
+      required: [id, name, position, filters, widgets]
     RefreshMode:
       type: string
       enum: [manual, interval]
@@ -660,6 +737,8 @@ components:
           type: string
         modelId:
           type: string
+        filters:
+          $ref: "#/components/schemas/FilterSet"
         pages:
           type: array
           items:
@@ -677,7 +756,7 @@ components:
           type: string
           format: date-time
       required:
-        [id, name, description, modelId, pages, refreshMode, refreshIntervalSeconds, version, createdAt, updatedAt]
+        [id, name, description, modelId, filters, pages, refreshMode, refreshIntervalSeconds, version, createdAt, updatedAt]
     DashboardSummary:
       type: object
       properties:
@@ -761,6 +840,133 @@ components:
           items:
             type: string
       required: [order]
+    FilterCombinator:
+      type: string
+      enum: [and, or]
+    RelativeDateRange:
+      type: string
+      enum:
+        [
+          today,
+          yesterday,
+          last_7_days,
+          last_30_days,
+          last_90_days,
+          this_week,
+          previous_week,
+          this_month,
+          previous_month,
+          this_quarter,
+          previous_quarter,
+          this_year,
+          previous_year,
+          year_to_date,
+          month_to_date,
+          quarter_to_date,
+        ]
+    FilterClause:
+      type: object
+      description: One leaf of a filter. `kind` selects which of the remaining properties apply.
+      properties:
+        kind:
+          type: string
+          enum: [condition, relative_date, absolute_date, top_n]
+        field:
+          type: string
+        negate:
+          type: boolean
+        operator:
+          type: string
+          enum:
+            [eq, neq, gt, gte, lt, lte, between, in, not_in, contains, not_contains, starts_with, ends_with, is_null, is_not_null]
+        values:
+          type: array
+          items: {}
+        range:
+          $ref: "#/components/schemas/RelativeDateRange"
+        from:
+          type: string
+        to:
+          type: string
+        measure:
+          type: string
+        direction:
+          type: string
+          enum: [top, bottom]
+        n:
+          type: integer
+      required: [kind, field]
+    FilterGroup:
+      type: object
+      properties:
+        combinator:
+          $ref: "#/components/schemas/FilterCombinator"
+        negate:
+          type: boolean
+        clauses:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterClause"
+      required: [combinator, clauses]
+    FilterSet:
+      type: object
+      description: A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.
+      properties:
+        combinator:
+          $ref: "#/components/schemas/FilterCombinator"
+        negate:
+          type: boolean
+        clauses:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterClause"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterGroup"
+      required: [combinator, clauses]
+    FilterValuesInput:
+      type: object
+      properties:
+        field:
+          type: string
+        search:
+          type: string
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/FilterSet"
+      required: [field]
+    FilterValue:
+      type: object
+      properties:
+        value:
+          type: string
+        count:
+          type: integer
+      required: [value, count]
+    FilterValuesResult:
+      type: object
+      properties:
+        field:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilterValue"
+        truncated:
+          type: boolean
+        cascadedFrom:
+          type: array
+          items:
+            type: string
+      required: [field, values, truncated, cascadedFrom]
+    SetFiltersInput:
+      type: object
+      properties:
+        filters:
+          $ref: "#/components/schemas/FilterSet"
+      required: [filters]
     Aggregation:
       type: string
       enum: [sum, avg, min, max, count, count_distinct, median, p90, p95, none]
@@ -911,9 +1117,7 @@ components:
           items:
             $ref: "#/components/schemas/ExploreChannel"
         filters:
-          type: array
-          items:
-            $ref: "#/components/schemas/ExploreFilter"
+          $ref: "#/components/schemas/FilterSet"
         sort:
           type: array
           items:

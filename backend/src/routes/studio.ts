@@ -4,9 +4,11 @@ import {
   GetQueryRunParams,
   GetSchemaContextQueryParams,
   RepairQueryRunBody,
+  GetFilterValuesBody,
   RunExploreQueryBody,
 } from "@workspace/api-zod";
 import { describeModel, ExploreError, runExploreQuery } from "../domain/semantic/explore-service";
+import { getFilterValues } from "../domain/semantic/filter-values-service";
 import { executionErrorStatus } from "../domain/execution/query-service";
 import { QueryExecutionError } from "../domain/execution/types";
 import { QueryCompileError } from "../domain/semantic/query-plan";
@@ -61,6 +63,23 @@ router.post("/studio/query", async (req, res) => {
     if (error instanceof QueryExecutionError) {
       return res.status(executionErrorStatus(error)).json({ error: error.message, code: error.code });
     }
+    throw error;
+  }
+});
+
+router.post("/studio/filter-values", async (req, res) => {
+  const parsed = GetFilterValuesBody.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Invalid filter values request.", code: "INVALID_BODY" });
+
+  const controller = new AbortController();
+  req.on("close", () => { if (!res.writableEnded) controller.abort(); });
+
+  try {
+    return res.json(await getFilterValues(parsed.data as never, { signal: controller.signal }));
+  } catch (error) {
+    if (error instanceof ExploreError) return res.status(400).json({ error: error.message, code: error.code });
+    if (error instanceof QueryCompileError) return res.status(400).json({ error: error.message, code: error.code });
+    if (error instanceof QueryExecutionError) return res.status(executionErrorStatus(error)).json({ error: error.message, code: error.code });
     throw error;
   }
 });

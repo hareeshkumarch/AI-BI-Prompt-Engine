@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DashboardPage } from './dashboardPage';
+import type { FilterSet } from './filterSet';
 import type { RefreshMode } from './refreshMode';
 
 export interface Dashboard {
@@ -13,6 +14,7 @@ export interface Dashboard {
   name: string;
   description: string;
   modelId: string;
+  filters: FilterSet;
   pages: DashboardPage[];
   refreshMode: RefreshMode;
   refreshIntervalSeconds: number;

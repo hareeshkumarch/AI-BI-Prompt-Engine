@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Copy, GripVertical, Loader2, Maximize2, Trash2, X } from 'lucide-react';
 import { runExploreQuery } from '@workspace/api-client-react';
-import type { ExploreQueryResult, Widget, WidgetSize } from '@workspace/api-client-react';
+import type { ExploreQueryResult, FilterSet, Widget, WidgetSize } from '@workspace/api-client-react';
+import { activeFilters, mergeFilterSets } from '@/components/filter-bar';
 import { InsightChart } from '@/components/insight-chart';
 import { ErrorState } from '@/components/studio-ui';
 
@@ -25,6 +26,7 @@ type WidgetState =
 
 export function DashboardWidget({
   widget,
+  scope,
   editing,
   refreshToken,
   onResize,
@@ -35,6 +37,7 @@ export function DashboardWidget({
   onDrop,
 }: {
   widget: Widget;
+  scope: FilterSet;
   editing: boolean;
   refreshToken: number;
   onResize: (size: WidgetSize) => void;
@@ -46,7 +49,11 @@ export function DashboardWidget({
 }) {
   const [state, setState] = useState<WidgetState>({ status: 'loading' });
   const [expanded, setExpanded] = useState(false);
-  const request = JSON.stringify({ ...widget.query, chartType: widget.chartType });
+  const request = JSON.stringify({
+    ...widget.query,
+    filters: activeFilters(mergeFilterSets(scope, widget.query.filters)),
+    chartType: widget.chartType,
+  });
 
   // Each widget owns its own request so one slow query never blocks the others.
   useEffect(() => {

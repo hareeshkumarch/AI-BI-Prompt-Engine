@@ -89,6 +89,24 @@ describe("deriveSemanticModel", () => {
     ]);
   });
 
+  it("hides fields on tables that cannot be joined to the base table", () => {
+    const model = deriveSemanticModel(
+      [
+        table([column({ name: "order_id", dataType: "bigint" }), column({ name: "customer_id", dataType: "bigint" })], {
+          name: "orders",
+          primaryKey: ["order_id"],
+          foreignKeys: [{ fromColumn: "customer_id", toTable: "customers", toColumn: "customer_id" }],
+        }),
+        table([column({ name: "segment", dataType: "varchar" })], { name: "customers" }),
+        table([column({ name: "category", dataType: "varchar" })], { name: "products" }),
+      ],
+      { id: "m", label: "M", baseTable: "orders" },
+    );
+    expect(dimensionsOf(model).map((field) => field.name)).toContain("segment");
+    expect(dimensionsOf(model).map((field) => field.name)).not.toContain("category");
+    expect(model.fields.find((field) => field.name === "category")?.hidden).toBe(true);
+  });
+
   it("builds a geography hierarchy when the levels are present", () => {
     const model = deriveSemanticModel(
       [table([

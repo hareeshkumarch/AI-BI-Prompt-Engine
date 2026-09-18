@@ -1,11 +1,12 @@
-import type { ExploreChannelInput, ExploreFilterInput } from "../semantic/explore-service";
+import type { ExploreChannelInput } from "../semantic/explore-service";
+import type { FilterSet } from "../semantic/filter-set";
 
 export type WidgetSize = "small" | "medium" | "large" | "full";
 
 export type WidgetQuery = {
   dimensions: ExploreChannelInput[];
   measures: ExploreChannelInput[];
-  filters: ExploreFilterInput[];
+  filters: FilterSet;
   sort: { field: string; direction: "asc" | "desc" }[];
   limit: number;
 };
@@ -23,6 +24,7 @@ export type DashboardPage = {
   id: string;
   name: string;
   position: number;
+  filters: FilterSet;
   widgets: Widget[];
 };
 
@@ -33,6 +35,7 @@ export type Dashboard = {
   name: string;
   description: string;
   modelId: string;
+  filters: FilterSet;
   pages: DashboardPage[];
   refreshMode: RefreshMode;
   refreshIntervalSeconds: number;

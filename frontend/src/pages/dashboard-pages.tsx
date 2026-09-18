@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, LayoutDashboard, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Filter, LayoutDashboard, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { Link, useLocation, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -11,14 +11,21 @@ import {
   useDeleteDashboardWidget,
   useDuplicateDashboardWidget,
   useGetDashboard,
+  useGetSemanticModel,
   useListDashboards,
   useReorderDashboardWidgets,
+  useSetDashboardFilters,
+  useSetPageFilters,
   useUpdateDashboard,
   useUpdateDashboardWidget,
 } from '@workspace/api-client-react';
-import type { WidgetSize } from '@workspace/api-client-react';
+import type { FilterSet, WidgetSize } from '@workspace/api-client-react';
 import { DashboardWidget } from '@/components/dashboard-widget';
-import { EmptyState, ErrorState, LoadingBlock, StatusPill, formatRelative } from '@/components/studio-ui';
+import { activeFilters, emptyFilterSet, FilterBar, mergeFilterSets } from '@/components/filter-bar';
+import { isMeasure, metricAsField, type PickerField } from '@/components/field-picker';
+import { EmptyState, ErrorState, LoadingBlock, StatusPill, formatRelative, useDebouncedValue } from '@/components/studio-ui';
+
+const NO_FILTERS = emptyFilterSet();
 
 function Frame({ eyebrow, title, detail, action, children }: { eyebrow: string; title: string; detail: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -121,17 +128,45 @@ export function DashboardViewPage() {
   const duplicate = useDuplicateDashboardWidget();
   const reorder = useReorderDashboardWidgets();
   const updateDashboard = useUpdateDashboard();
+  const saveDashboardFilters = useSetDashboardFilters();
+  const savePageFilters = useSetPageFilters();
+  const modelQuery = useGetSemanticModel();
 
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [refreshToken, setRefreshToken] = useState(0);
+  const [scopeDrafts, setScopeDrafts] = useState<Record<string, FilterSet>>({});
+  const [scopeOpen, setScopeOpen] = useState<boolean | null>(null);
   const dragged = useRef<string | null>(null);
+  const persisted = useRef<Record<string, string>>({});
 
   const dashboard = dashboardQuery.data;
   const page = dashboard?.pages.find((item) => item.id === activePageId) ?? dashboard?.pages[0];
   const refresh = () => void queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey(dashboardId) });
+
+  const dashboardScopeKey = `dashboard:${dashboardId}`;
+  const pageScopeKey = `page:${page?.id ?? ''}`;
+  const dashboardFilters = scopeDrafts[dashboardScopeKey] ?? dashboard?.filters ?? NO_FILTERS;
+  const pageFilters = scopeDrafts[pageScopeKey] ?? page?.filters ?? NO_FILTERS;
+  const scope = activeFilters(mergeFilterSets(dashboardFilters, pageFilters));
+
+  const pendingScopes = useDebouncedValue(JSON.stringify(scopeDrafts), 600);
+
+  // Scope edits apply to the widgets at once; the write to the server trails behind them.
+  useEffect(() => {
+    for (const [key, value] of Object.entries(JSON.parse(pendingScopes) as Record<string, FilterSet>)) {
+      const serialized = JSON.stringify(value);
+      if (persisted.current[key] === serialized) continue;
+      persisted.current[key] = serialized;
+      if (key.startsWith('dashboard:')) {
+        saveDashboardFilters.mutate({ dashboardId: key.slice('dashboard:'.length), data: { filters: value } }, { onSuccess: refresh });
+      } else {
+        savePageFilters.mutate({ dashboardId, pageId: key.slice('page:'.length), data: { filters: value } }, { onSuccess: refresh });
+      }
+    }
+  }, [pendingScopes, dashboardId]);
 
   useEffect(() => {
     if (dashboard && !activePageId) setActivePageId(dashboard.pages[0]?.id ?? null);
@@ -153,6 +188,12 @@ export function DashboardViewPage() {
     );
   }
 
+  const allFields: PickerField[] = modelQuery.data ? [...modelQuery.data.fields, ...modelQuery.data.metrics.map(metricAsField)] : [];
+  const scopeFields = allFields.filter((field) => !isMeasure(field));
+  const scopeMeasures = allFields.filter(isMeasure);
+  const scopeCount = (dashboardFilters.clauses?.length ?? 0) + (pageFilters.clauses?.length ?? 0);
+  const scopeShown = scopeOpen ?? scopeCount > 0;
+
   const commitName = () => {
     const next = draftName.trim();
     setRenaming(false);
@@ -172,7 +213,7 @@ export function DashboardViewPage() {
     reorder.mutate({ dashboardId, pageId: page.id, data: { order } }, { onSuccess: refresh });
   };
 
-  const saving = updateWidget.isPending || deleteWidget.isPending || duplicate.isPending || reorder.isPending || updateDashboard.isPending;
+  const saving = updateWidget.isPending || deleteWidget.isPending || duplicate.isPending || reorder.isPending || updateDashboard.isPending || saveDashboardFilters.isPending || savePageFilters.isPending;
 
   const action = (
     <div className="flex flex-wrap items-center gap-2">
@@ -259,6 +300,52 @@ export function DashboardViewPage() {
         )}
       </div>
 
+      {allFields.length > 0 && (
+        <section className="mb-4 overflow-hidden rounded-sm border border-border bg-card" data-testid="panel-dashboard-filters">
+          <button
+            type="button"
+            onClick={() => setScopeOpen(!scopeShown)}
+            aria-expanded={scopeShown}
+            className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40"
+            data-testid="button-toggle-scope"
+          >
+            <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">
+              <Filter size={12} /> Filter scope
+              {scopeCount > 0 && <span className="rounded-sm bg-primary/10 px-1.5 py-0.5 mono text-[10px] font-bold text-foreground">{scopeCount}</span>}
+            </span>
+            <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              {scopeCount === 0 && !scopeShown && <span>Narrow every widget at once</span>}
+              <ChevronDown size={13} className={`transition-transform ${scopeShown ? 'rotate-180' : ''}`} />
+            </span>
+          </button>
+
+          {scopeShown && (
+            <div className="border-t border-border">
+              <div className="border-b border-border p-4">
+                <FilterBar
+                  compact
+                  title="Every page"
+                  filters={dashboardFilters}
+                  fields={scopeFields}
+                  measures={scopeMeasures}
+                  onChange={(next) => setScopeDrafts((current) => ({ ...current, [dashboardScopeKey]: next }))}
+                />
+              </div>
+              <div className="p-4">
+                <FilterBar
+                  compact
+                  title={`${page.name} only`}
+                  filters={pageFilters}
+                  fields={scopeFields}
+                  measures={scopeMeasures}
+                  onChange={(next) => setScopeDrafts((current) => ({ ...current, [pageScopeKey]: next }))}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {page.widgets.length === 0 ? (
         <EmptyState icon={LayoutDashboard} title="This page is empty" detail="Build a query in Explore and use Save to dashboard to put it here." />
       ) : (
@@ -267,6 +354,7 @@ export function DashboardViewPage() {
             <DashboardWidget
               key={widget.id}
               widget={widget}
+              scope={scope}
               editing={editing}
               refreshToken={refreshToken}
               onResize={(size: WidgetSize) => updateWidget.mutate({ dashboardId, pageId: page.id, widgetId: widget.id, data: { size } }, { onSuccess: refresh })}

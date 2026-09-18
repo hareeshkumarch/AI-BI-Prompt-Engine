@@ -29,6 +29,8 @@ import type {
   ErrorResponse,
   ExploreQueryInput,
   ExploreQueryResult,
+  FilterValuesInput,
+  FilterValuesResult,
   GetSchemaContextParams,
   HealthStatus,
   QueryRun,
@@ -38,6 +40,7 @@ import type {
   RepairRunInput,
   SchemaContext,
   SemanticModelSummary,
+  SetFiltersInput,
   StudioOverview,
   UpdateDashboardInput,
   UpdateWidgetInput
@@ -551,6 +554,186 @@ export const useDeleteDashboard = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteDashboardMutationOptions(options));
+    }
+
+export const getSetDashboardFiltersUrl = (dashboardId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/filters`
+}
+
+/**
+ * @summary Replace the dashboard-wide filters
+ */
+export const setDashboardFilters = async (dashboardId: string,
+    setFiltersInput: SetFiltersInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getSetDashboardFiltersUrl(dashboardId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setFiltersInput)
+  }
+);}
+
+
+
+
+
+export const getSetDashboardFiltersMutationKey = () => ['setDashboardFilters'] as const;
+
+export const getSetDashboardFiltersMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDashboardFilters>>, TError,SetDashboardFiltersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDashboardFilters>>, TError,SetDashboardFiltersMutationVariables, TContext> => {
+
+const mutationKey = getSetDashboardFiltersMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDashboardFilters>>, SetDashboardFiltersMutationVariables> = (props) => {
+          const {dashboardId,data} = props ?? {};
+
+          return  setDashboardFilters(dashboardId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDashboardFiltersMutationResult = NonNullable<Awaited<ReturnType<typeof setDashboardFilters>>>
+    export type SetDashboardFiltersMutationBody = BodyType<SetFiltersInput>
+    export type SetDashboardFiltersMutationError = ErrorType<unknown>
+    export type SetDashboardFiltersMutationVariables = {dashboardId: string;data: BodyType<SetFiltersInput>}
+
+    /**
+ * @summary Replace the dashboard-wide filters
+ */
+export const useSetDashboardFilters = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDashboardFilters>>, TError,SetDashboardFiltersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setDashboardFilters>>,
+        TError,
+        SetDashboardFiltersMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetDashboardFiltersMutationOptions(options));
+    }
+
+export const getSetPageFiltersUrl = (dashboardId: string,
+    pageId: string,) => {
+
+
+
+
+  return `/api/dashboards/${dashboardId}/pages/${pageId}/filters`
+}
+
+/**
+ * @summary Replace the filters for one page
+ */
+export const setPageFilters = async (dashboardId: string,
+    pageId: string,
+    setFiltersInput: SetFiltersInput, options?: Parameters<typeof customFetch>[1]): Promise<Dashboard> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Dashboard>(getSetPageFiltersUrl(dashboardId,pageId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setFiltersInput)
+  }
+);}
+
+
+
+
+
+export const getSetPageFiltersMutationKey = () => ['setPageFilters'] as const;
+
+export const getSetPageFiltersMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPageFilters>>, TError,SetPageFiltersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPageFilters>>, TError,SetPageFiltersMutationVariables, TContext> => {
+
+const mutationKey = getSetPageFiltersMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPageFilters>>, SetPageFiltersMutationVariables> = (props) => {
+          const {dashboardId,pageId,data} = props ?? {};
+
+          return  setPageFilters(dashboardId,pageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPageFiltersMutationResult = NonNullable<Awaited<ReturnType<typeof setPageFilters>>>
+    export type SetPageFiltersMutationBody = BodyType<SetFiltersInput>
+    export type SetPageFiltersMutationError = ErrorType<unknown>
+    export type SetPageFiltersMutationVariables = {dashboardId: string;pageId: string;data: BodyType<SetFiltersInput>}
+
+    /**
+ * @summary Replace the filters for one page
+ */
+export const useSetPageFilters = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPageFilters>>, TError,SetPageFiltersMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPageFilters>>,
+        TError,
+        SetPageFiltersMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetPageFiltersMutationOptions(options));
     }
 
 export const getAddDashboardPageUrl = (dashboardId: string,) => {
@@ -1474,6 +1657,94 @@ export const useRunExploreQuery = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRunExploreQueryMutationOptions(options));
+    }
+
+export const getGetFilterValuesUrl = () => {
+
+
+
+
+  return `/api/studio/filter-values`
+}
+
+/**
+ * @summary Distinct values for a field, narrowed by the other filters in scope
+ */
+export const getFilterValues = async (filterValuesInput: FilterValuesInput, options?: Parameters<typeof customFetch>[1]): Promise<FilterValuesResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<FilterValuesResult>(getGetFilterValuesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(filterValuesInput)
+  }
+);}
+
+
+
+
+
+export const getGetFilterValuesMutationKey = () => ['getFilterValues'] as const;
+
+export const getGetFilterValuesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getFilterValues>>, TError,GetFilterValuesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getFilterValues>>, TError,GetFilterValuesMutationVariables, TContext> => {
+
+const mutationKey = getGetFilterValuesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getFilterValues>>, GetFilterValuesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  getFilterValues(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetFilterValuesMutationResult = NonNullable<Awaited<ReturnType<typeof getFilterValues>>>
+    export type GetFilterValuesMutationBody = BodyType<FilterValuesInput>
+    export type GetFilterValuesMutationError = ErrorType<ErrorResponse>
+    export type GetFilterValuesMutationVariables = {data: BodyType<FilterValuesInput>}
+
+    /**
+ * @summary Distinct values for a field, narrowed by the other filters in scope
+ */
+export const useGetFilterValues = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getFilterValues>>, TError,GetFilterValuesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getFilterValues>>,
+        TError,
+        GetFilterValuesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetFilterValuesMutationOptions(options));
     }
 
 export const getListQueryRunsUrl = () => {
