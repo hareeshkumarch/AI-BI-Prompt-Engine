@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { activeModel } from "../semantic/explore-service";
+import { activeModel, normalizeFilters } from "../semantic/explore-service";
 import { fieldByName, metricByName } from "../semantic/semantic-model";
+import { emptyFilterSet, fieldsInSet, type FilterSet } from "../semantic/filter-set";
 import { dashboardStore } from "./store";
 import {
   DashboardError,
@@ -28,7 +29,7 @@ function assertQuery(query: WidgetQuery) {
   const referenced = [
     ...query.dimensions.map((item) => item.field),
     ...query.measures.map((item) => item.field),
-    ...query.filters.map((item) => item.field),
+    ...fieldsInSet(query.filters),
     ...query.sort.map((item) => item.field),
   ];
   const unknown = referenced.filter((name) => !known(name));
@@ -44,10 +45,18 @@ function normalizeQuery(input: Partial<WidgetQuery> | undefined): WidgetQuery {
   return {
     dimensions: input?.dimensions ?? [],
     measures: input?.measures ?? [],
-    filters: input?.filters ?? [],
+    filters: normalizeFilters(input?.filters),
     sort: input?.sort ?? [],
     limit: Math.min(Math.max(1, Math.trunc(input?.limit ?? 200)), 5000),
   };
+}
+
+function assertFilterFields(filters: FilterSet) {
+  const model = activeModel();
+  const unknown = fieldsInSet(filters).filter((name) => !fieldByName(model, name) && !metricByName(model, name));
+  if (unknown.length > 0) {
+    throw new DashboardError("UNKNOWN_FIELD", 400, `Unknown field(s): ${[...new Set(unknown)].join(", ")}.`);
+  }
 }
 
 function reposition<T extends { position: number }>(items: T[]): T[] {
@@ -66,10 +75,23 @@ function summarize(dashboard: Dashboard): DashboardSummary {
   };
 }
 
+// Records written before filters became a tree carry a flat array, or nothing at all.
+function normalizeDashboard(dashboard: Dashboard): Dashboard {
+  return {
+    ...dashboard,
+    filters: normalizeFilters(dashboard.filters),
+    pages: dashboard.pages.map((page) => ({
+      ...page,
+      filters: normalizeFilters(page.filters),
+      widgets: page.widgets.map((widget) => ({ ...widget, query: { ...widget.query, filters: normalizeFilters(widget.query.filters) } })),
+    })),
+  };
+}
+
 async function load(id: string): Promise<Dashboard> {
   const dashboard = await dashboardStore().get(id);
   if (!dashboard) throw new DashboardError("NOT_FOUND", 404, `Dashboard "${id}" does not exist.`);
-  return dashboard;
+  return normalizeDashboard(dashboard);
 }
 
 function pageOf(dashboard: Dashboard, pageId: string): DashboardPage {
@@ -98,7 +120,8 @@ export async function createDashboard(input: { name?: string; description?: stri
     name: trimName(input.name ?? "", "Untitled dashboard"),
     description: (input.description ?? "").trim().slice(0, 500),
     modelId: activeModel().id,
-    pages: [{ id: randomUUID(), name: "Page 1", position: 0, widgets: [] }],
+    filters: emptyFilterSet(),
+    pages: [{ id: randomUUID(), name: "Page 1", position: 0, filters: emptyFilterSet(), widgets: [] }],
     refreshMode: "manual",
     refreshIntervalSeconds: 60,
     version: 1,
@@ -122,6 +145,22 @@ export async function updateDashboard(
   });
 }
 
+export async function setDashboardFilters(id: string, filters: FilterSet): Promise<Dashboard> {
+  const dashboard = await load(id);
+  assertFilterFields(filters);
+  return commit({ ...dashboard, filters });
+}
+
+export async function setPageFilters(id: string, pageId: string, filters: FilterSet): Promise<Dashboard> {
+  const dashboard = await load(id);
+  pageOf(dashboard, pageId);
+  assertFilterFields(filters);
+  return commit({
+    ...dashboard,
+    pages: dashboard.pages.map((item) => (item.id === pageId ? { ...item, filters } : item)),
+  });
+}
+
 export async function deleteDashboard(id: string): Promise<void> {
   const removed = await dashboardStore().remove(id);
   if (!removed) throw new DashboardError("NOT_FOUND", 404, `Dashboard "${id}" does not exist.`);
@@ -133,6 +172,7 @@ export async function addPage(id: string, name?: string): Promise<Dashboard> {
     id: randomUUID(),
     name: trimName(name ?? "", `Page ${dashboard.pages.length + 1}`),
     position: dashboard.pages.length,
+    filters: emptyFilterSet(),
     widgets: [],
   };
   return commit({ ...dashboard, pages: [...dashboard.pages, page] });
@@ -276,5 +316,5 @@ export async function restoreRevision(id: string, version: number): Promise<Dash
   const current = await load(id);
   const revision = (await dashboardStore().revisions(id)).find((item) => item.version === version);
   if (!revision) throw new DashboardError("REVISION_NOT_FOUND", 404, `Version ${version} is not retained.`);
-  return commit({ ...revision.dashboard, version: current.version, createdAt: current.createdAt });
+  return commit(normalizeDashboard({ ...revision.dashboard, version: current.version, createdAt: current.createdAt }));
 }

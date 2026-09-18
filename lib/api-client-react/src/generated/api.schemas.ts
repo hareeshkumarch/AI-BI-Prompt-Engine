@@ -171,10 +171,28 @@ export interface ExploreChannel {
   grain?: string | null;
 }
 
-export type ExploreFilterOperator = typeof ExploreFilterOperator[keyof typeof ExploreFilterOperator];
+export type FilterCombinator = typeof FilterCombinator[keyof typeof FilterCombinator];
 
 
-export const ExploreFilterOperator = {
+export const FilterCombinator = {
+  and: 'and',
+  or: 'or',
+} as const;
+
+export type FilterClauseKind = typeof FilterClauseKind[keyof typeof FilterClauseKind];
+
+
+export const FilterClauseKind = {
+  condition: 'condition',
+  relative_date: 'relative_date',
+  absolute_date: 'absolute_date',
+  top_n: 'top_n',
+} as const;
+
+export type FilterClauseOperator = typeof FilterClauseOperator[keyof typeof FilterClauseOperator];
+
+
+export const FilterClauseOperator = {
   eq: 'eq',
   neq: 'neq',
   gt: 'gt',
@@ -192,10 +210,67 @@ export const ExploreFilterOperator = {
   is_not_null: 'is_not_null',
 } as const;
 
-export interface ExploreFilter {
+export type RelativeDateRange = typeof RelativeDateRange[keyof typeof RelativeDateRange];
+
+
+export const RelativeDateRange = {
+  today: 'today',
+  yesterday: 'yesterday',
+  last_7_days: 'last_7_days',
+  last_30_days: 'last_30_days',
+  last_90_days: 'last_90_days',
+  this_week: 'this_week',
+  previous_week: 'previous_week',
+  this_month: 'this_month',
+  previous_month: 'previous_month',
+  this_quarter: 'this_quarter',
+  previous_quarter: 'previous_quarter',
+  this_year: 'this_year',
+  previous_year: 'previous_year',
+  year_to_date: 'year_to_date',
+  month_to_date: 'month_to_date',
+  quarter_to_date: 'quarter_to_date',
+} as const;
+
+export type FilterClauseDirection = typeof FilterClauseDirection[keyof typeof FilterClauseDirection];
+
+
+export const FilterClauseDirection = {
+  top: 'top',
+  bottom: 'bottom',
+} as const;
+
+/**
+ * One leaf of a filter. `kind` selects which of the remaining properties apply.
+ */
+export interface FilterClause {
+  kind: FilterClauseKind;
   field: string;
-  operator: ExploreFilterOperator;
-  values: unknown[];
+  negate?: boolean;
+  operator?: FilterClauseOperator;
+  values?: unknown[];
+  range?: RelativeDateRange;
+  from?: string;
+  to?: string;
+  measure?: string;
+  direction?: FilterClauseDirection;
+  n?: number;
+}
+
+export interface FilterGroup {
+  combinator: FilterCombinator;
+  negate?: boolean;
+  clauses: FilterClause[];
+}
+
+/**
+ * A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.
+ */
+export interface FilterSet {
+  combinator: FilterCombinator;
+  negate?: boolean;
+  clauses: FilterClause[];
+  groups?: FilterGroup[];
 }
 
 export type ExploreSortDirection = typeof ExploreSortDirection[keyof typeof ExploreSortDirection];
@@ -214,7 +289,7 @@ export interface ExploreSort {
 export interface WidgetQuery {
   dimensions: ExploreChannel[];
   measures: ExploreChannel[];
-  filters: ExploreFilter[];
+  filters: FilterSet;
   sort: ExploreSort[];
   limit: number;
 }
@@ -233,6 +308,7 @@ export interface DashboardPage {
   id: string;
   name: string;
   position: number;
+  filters: FilterSet;
   widgets: Widget[];
 }
 
@@ -249,6 +325,7 @@ export interface Dashboard {
   name: string;
   description: string;
   modelId: string;
+  filters: FilterSet;
   pages: DashboardPage[];
   refreshMode: RefreshMode;
   refreshIntervalSeconds: number;
@@ -305,6 +382,29 @@ export interface UpdateWidgetInput {
 
 export interface ReorderWidgetsInput {
   order: string[];
+}
+
+export interface FilterValuesInput {
+  field: string;
+  search?: string;
+  limit?: number;
+  filters?: FilterSet;
+}
+
+export interface FilterValue {
+  value: string;
+  count: number;
+}
+
+export interface FilterValuesResult {
+  field: string;
+  values: FilterValue[];
+  truncated: boolean;
+  cascadedFrom: string[];
+}
+
+export interface SetFiltersInput {
+  filters: FilterSet;
 }
 
 export type FieldRoleName = typeof FieldRoleName[keyof typeof FieldRoleName];
@@ -383,12 +483,39 @@ export interface SemanticModelSummary {
   hierarchies: SemanticHierarchySummary[];
 }
 
+export type ExploreFilterOperator = typeof ExploreFilterOperator[keyof typeof ExploreFilterOperator];
+
+
+export const ExploreFilterOperator = {
+  eq: 'eq',
+  neq: 'neq',
+  gt: 'gt',
+  gte: 'gte',
+  lt: 'lt',
+  lte: 'lte',
+  between: 'between',
+  in: 'in',
+  not_in: 'not_in',
+  contains: 'contains',
+  not_contains: 'not_contains',
+  starts_with: 'starts_with',
+  ends_with: 'ends_with',
+  is_null: 'is_null',
+  is_not_null: 'is_not_null',
+} as const;
+
+export interface ExploreFilter {
+  field: string;
+  operator: ExploreFilterOperator;
+  values: unknown[];
+}
+
 export interface ExploreQueryInput {
   /** @nullable */
   chartType?: string | null;
   dimensions: ExploreChannel[];
   measures: ExploreChannel[];
-  filters?: ExploreFilter[];
+  filters?: FilterSet;
   sort?: ExploreSort[];
   limit?: number;
 }

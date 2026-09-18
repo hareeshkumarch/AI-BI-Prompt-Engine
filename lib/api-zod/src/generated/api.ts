@@ -49,10 +49,78 @@ export const CreateDashboardResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -70,11 +138,40 @@ export const CreateDashboardResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -103,10 +200,78 @@ export const GetDashboardResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -124,11 +289,40 @@ export const GetDashboardResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -164,10 +358,78 @@ export const UpdateDashboardResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -185,11 +447,40 @@ export const UpdateDashboardResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -217,25 +508,126 @@ export const DeleteDashboardResponse = zod.void()
 
 
 /**
- * @summary Add a page
+ * @summary Replace the dashboard-wide filters
  */
-export const AddDashboardPageParams = zod.object({
+export const SetDashboardFiltersParams = zod.object({
   "dashboardId": zod.coerce.string()
 })
 
-export const AddDashboardPageBody = zod.object({
-  "name": zod.string().optional()
+export const SetDashboardFiltersBody = zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.')
 })
 
-export const AddDashboardPageResponse = zod.object({
+export const SetDashboardFiltersResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -253,11 +645,384 @@ export const AddDashboardPageResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
 })),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Replace the filters for one page
+ */
+export const SetPageFiltersParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string()
+})
+
+export const SetPageFiltersBody = zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.')
+})
+
+export const SetPageFiltersResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Add a page
+ */
+export const AddDashboardPageParams = zod.object({
+  "dashboardId": zod.coerce.string()
+})
+
+export const AddDashboardPageBody = zod.object({
+  "name": zod.string().optional()
+})
+
+export const AddDashboardPageResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -297,11 +1062,40 @@ export const AddDashboardWidgetBody = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -315,10 +1109,78 @@ export const AddDashboardWidgetResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -336,11 +1198,40 @@ export const AddDashboardWidgetResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -374,10 +1265,78 @@ export const ReorderDashboardWidgetsResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -395,11 +1354,40 @@ export const ReorderDashboardWidgetsResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -440,11 +1428,40 @@ export const UpdateDashboardWidgetBody = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -458,10 +1475,78 @@ export const UpdateDashboardWidgetResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -479,11 +1564,40 @@ export const UpdateDashboardWidgetResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -514,10 +1628,78 @@ export const DeleteDashboardWidgetResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -535,11 +1717,40 @@ export const DeleteDashboardWidgetResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -570,10 +1781,78 @@ export const DuplicateDashboardWidgetResponse = zod.object({
   "name": zod.string(),
   "description": zod.string(),
   "modelId": zod.string(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "pages": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "position": zod.number().int(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "widgets": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -591,11 +1870,40 @@ export const DuplicateDashboardWidgetResponse = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -765,11 +2073,40 @@ export const RunExploreQueryBody = zod.object({
   "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
   "grain": zod.string().nullish()
 })),
-  "filters": zod.array(zod.object({
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
   "field": zod.string(),
-  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
-  "values": zod.array(zod.unknown())
-})).optional(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).optional().describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.'),
   "sort": zod.array(zod.object({
   "field": zod.string(),
   "direction": zod.enum(['asc', 'desc'])
@@ -883,6 +2220,60 @@ export const RunExploreQueryResponse = zod.object({
   "path": zod.string(),
   "severity": zod.enum(['error', 'warning'])
 }))
+})
+
+
+/**
+ * @summary Distinct values for a field, narrowed by the other filters in scope
+ */
+export const GetFilterValuesBody = zod.object({
+  "field": zod.string(),
+  "search": zod.string().optional(),
+  "limit": zod.number().int().optional(),
+  "filters": zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.')),
+  "groups": zod.array(zod.object({
+  "combinator": zod.enum(['and', 'or']),
+  "negate": zod.boolean().optional(),
+  "clauses": zod.array(zod.object({
+  "kind": zod.enum(['condition', 'relative_date', 'absolute_date', 'top_n']),
+  "field": zod.string(),
+  "negate": zod.boolean().optional(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']).optional(),
+  "values": zod.array(zod.unknown()).optional(),
+  "range": zod.enum(['today', 'yesterday', 'last_7_days', 'last_30_days', 'last_90_days', 'this_week', 'previous_week', 'this_month', 'previous_month', 'this_quarter', 'previous_quarter', 'this_year', 'previous_year', 'year_to_date', 'month_to_date', 'quarter_to_date']).optional(),
+  "from": zod.string().optional(),
+  "to": zod.string().optional(),
+  "measure": zod.string().optional(),
+  "direction": zod.enum(['top', 'bottom']).optional(),
+  "n": zod.number().int().optional()
+}).describe('One leaf of a filter. `kind` selects which of the remaining properties apply.'))
+})).optional()
+}).optional().describe('A flat clause list plus one level of groups — enough for AND/OR/NOT without a recursive schema.')
+})
+
+export const GetFilterValuesResponse = zod.object({
+  "field": zod.string(),
+  "values": zod.array(zod.object({
+  "value": zod.string(),
+  "count": zod.number().int()
+})),
+  "truncated": zod.boolean(),
+  "cascadedFrom": zod.array(zod.string())
 })
 
 

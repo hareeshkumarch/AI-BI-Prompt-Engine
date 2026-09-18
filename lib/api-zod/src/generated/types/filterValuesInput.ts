@@ -6,12 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FilterSet } from './filterSet';
-import type { Widget } from './widget';
 
-export interface DashboardPage {
-  id: string;
-  name: string;
-  position: number;
-  filters: FilterSet;
-  widgets: Widget[];
+export interface FilterValuesInput {
+  field: string;
+  search?: string;
+  limit?: number;
+  filters?: FilterSet;
 }

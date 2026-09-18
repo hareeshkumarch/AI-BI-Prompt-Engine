@@ -19,12 +19,13 @@ import {
   updateDashboard,
   updateWidget,
 } from "../dashboard-service";
+import { emptyFilterSet } from "../../semantic/filter-set";
 import { DashboardError } from "../types";
 
 const revenueQuery = {
   dimensions: [{ field: "segment" }],
   measures: [{ field: "net_revenue", aggregation: "sum" as const }],
-  filters: [],
+  filters: emptyFilterSet(),
   sort: [],
   limit: 200,
 };
@@ -194,6 +195,49 @@ describe("durable store", () => {
     const reloaded = await listDashboards();
     expect(reloaded).toHaveLength(1);
     expect(reloaded[0]).toMatchObject({ name: "Persisted", widgetCount: 1 });
+
+    await rm(path, { force: true });
+  });
+
+  it("upgrades records saved before filters became a tree", async () => {
+    const path = `${tmpdir()}/legacy-${randomUUID()}.json`;
+    await writeFile(path, JSON.stringify({
+      dashboards: [{
+        id: "legacy",
+        name: "Legacy",
+        description: "",
+        modelId: "northstar",
+        pages: [{
+          id: "page-1",
+          name: "Page 1",
+          position: 0,
+          widgets: [{
+            id: "widget-1",
+            title: "W",
+            chartType: null,
+            size: "medium",
+            position: 0,
+            query: { ...revenueQuery, filters: [{ field: "status", operator: "eq", values: ["paid"] }] },
+          }],
+        }],
+        refreshMode: "manual",
+        refreshIntervalSeconds: 60,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }],
+      revisions: {},
+    }), "utf8");
+    setDashboardStore(new DashboardStore(path));
+
+    const dashboard = await getDashboard("legacy");
+    expect(dashboard.filters).toEqual(emptyFilterSet());
+    expect(dashboard.pages[0]!.filters).toEqual(emptyFilterSet());
+    expect(dashboard.pages[0]!.widgets[0]!.query.filters).toEqual({
+      combinator: "and",
+      clauses: [{ kind: "condition", field: "status", operator: "eq", values: ["paid"] }],
+      groups: [],
+    });
 
     await rm(path, { force: true });
   });

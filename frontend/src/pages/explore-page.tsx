@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Copy, Database, Gauge, Loader2, Play, Table2, Timer, X, Zap } from 'lucide-react';
 import { useGetSemanticModel, useRunExploreQuery } from '@workspace/api-client-react';
-import type { Aggregation, ChartEncoding, ExploreChannel, ExploreFilter, ExploreQueryResult, SemanticModelSummary } from '@workspace/api-client-react';
+import type { Aggregation, ChartEncoding, ExploreChannel, ExploreQueryResult, FilterSet, SemanticModelSummary } from '@workspace/api-client-react';
 import { ChartSwitcher, InsightChart } from '@/components/insight-chart';
 import { FieldPicker, isMeasure, metricAsField, type PickerField } from '@/components/field-picker';
-import { FilterBar } from '@/components/filter-bar';
+import { activeFilters, emptyFilterSet, FilterBar } from '@/components/filter-bar';
 import { SaveToDashboard } from '@/components/save-to-dashboard';
 import { DataResultTable, EmptyState, ErrorState, LoadingBlock, ResultSchema, SectionHeading, useDebouncedValue } from '@/components/studio-ui';
 
 const GRAINS = ['hour', 'day', 'week', 'month', 'quarter', 'year'] as const;
 const ROW_LIMITS = [50, 200, 500, 1000] as const;
-const NO_VALUE_OPERATORS = ['is_null', 'is_not_null'];
-
-function isComplete(filter: ExploreFilter) {
-  if (NO_VALUE_OPERATORS.includes(filter.operator)) return true;
-  return filter.values.length > 0 && filter.values.every((value) => value !== '' && value !== null && value !== undefined);
-}
 
 type Selection = ExploreChannel & { label: string; role: string };
 
@@ -75,7 +69,7 @@ export function ExplorePage() {
   const runQuery = useRunExploreQuery();
   const [dimensions, setDimensions] = useState<Selection[]>([]);
   const [measures, setMeasures] = useState<Selection[]>([]);
-  const [filters, setFilters] = useState<ExploreFilter[]>([]);
+  const [filters, setFilters] = useState<FilterSet>(emptyFilterSet());
   const [limit, setLimit] = useState<number>(200);
   const [chartType, setChartType] = useState<string | null>(null);
   const [sqlOpen, setSqlOpen] = useState(false);
@@ -89,7 +83,7 @@ export function ExplorePage() {
       chartType,
       dimensions: dimensions.map(({ field, grain }) => ({ field, grain })),
       measures: measures.map(({ field, aggregation }) => ({ field, aggregation })),
-      filters: filters.filter(isComplete),
+      filters: activeFilters(filters),
       limit,
     }),
     [dimensions, measures, filters, chartType, limit],
@@ -176,7 +170,7 @@ export function ExplorePage() {
               <div className="min-w-0 flex-1 basis-[260px]">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Group by</p>
                 <div className="flex min-h-[28px] flex-wrap items-center gap-1.5">
-                  {dimensions.length === 0 && <span className="text-[11px] text-muted-foreground/70">Add a dimension from the left</span>}
+                  {dimensions.length === 0 && <span className="text-[11px] text-muted-foreground">Add a dimension from the left</span>}
                   {dimensions.map((selection) => (
                     <Chip key={selection.field} selection={selection} options={optionsFor(selection)}
                       onChange={(value) => update('dimension', selection.field, value)}
@@ -187,7 +181,7 @@ export function ExplorePage() {
               <div className="min-w-0 flex-1 basis-[260px]">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Measure</p>
                 <div className="flex min-h-[28px] flex-wrap items-center gap-1.5">
-                  {measures.length === 0 && <span className="text-[11px] text-muted-foreground/70">Add a measure from the left</span>}
+                  {measures.length === 0 && <span className="text-[11px] text-muted-foreground">Add a measure from the left</span>}
                   {measures.map((selection) => (
                     <Chip key={selection.field} selection={selection} options={optionsFor(selection)}
                       onChange={(value) => update('measure', selection.field, value)}
@@ -198,7 +192,12 @@ export function ExplorePage() {
             </div>
           </div>
 
-          <FilterBar filters={filters} fields={allFields.filter((field) => !isMeasure(field))} onChange={setFilters} />
+          <FilterBar
+            filters={filters}
+            fields={allFields.filter((field) => !isMeasure(field))}
+            measures={allFields.filter(isMeasure)}
+            onChange={setFilters}
+          />
 
           {!hasSelection && (
             <EmptyState icon={Play} title="Pick a field to start" detail="Every selection compiles to SQL, runs on the engine, and comes back aggregated — raw rows never reach the browser." />

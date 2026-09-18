@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ExploreChannel } from './exploreChannel';
-import type { ExploreFilter } from './exploreFilter';
 import type { ExploreSort } from './exploreSort';
+import type { FilterSet } from './filterSet';
 
 export interface WidgetQuery {
   dimensions: ExploreChannel[];
   measures: ExploreChannel[];
-  filters: ExploreFilter[];
+  filters: FilterSet;
   sort: ExploreSort[];
   limit: number;
 }

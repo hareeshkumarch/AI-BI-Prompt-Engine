@@ -4,6 +4,8 @@ import {
   AddDashboardWidgetBody,
   CreateDashboardBody,
   ReorderDashboardWidgetsBody,
+  SetDashboardFiltersBody,
+  SetPageFiltersBody,
   UpdateDashboardBody,
   UpdateDashboardWidgetBody,
 } from "@workspace/api-zod";
@@ -17,6 +19,8 @@ import {
   getDashboard,
   listDashboards,
   reorderWidgets,
+  setDashboardFilters,
+  setPageFilters,
   updateDashboard,
   updateWidget,
 } from "../domain/dashboard/dashboard-service";
@@ -65,6 +69,26 @@ router.delete("/dashboards/:dashboardId", async (req, res) => {
   try {
     await deleteDashboard(req.params.dashboardId!);
     return res.status(204).end();
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.put("/dashboards/:dashboardId/filters", async (req, res) => {
+  const parsed = SetDashboardFiltersBody.safeParse(req.body);
+  if (!parsed.success) return invalid(res);
+  try {
+    return res.json(await setDashboardFilters(req.params.dashboardId!, parsed.data.filters as never));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.put("/dashboards/:dashboardId/pages/:pageId/filters", async (req, res) => {
+  const parsed = SetPageFiltersBody.safeParse(req.body);
+  if (!parsed.success) return invalid(res);
+  try {
+    return res.json(await setPageFilters(req.params.dashboardId!, req.params.pageId!, parsed.data.filters as never));
   } catch (error) {
     return fail(res, error);
   }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, LayoutGrid, Loader2, Plus } from 'lucide-react';
 import { getDashboard, useAddDashboardWidget, useCreateDashboard, useListDashboards } from '@workspace/api-client-react';
 import type { ExploreQueryInput, WidgetSize } from '@workspace/api-client-react';
+import { emptyFilterSet } from '@/components/filter-bar';
 
 export function SaveToDashboard({ query, defaultTitle }: { query: ExploreQueryInput; defaultTitle: string }) {
   const dashboards = useListDashboards();
@@ -20,7 +21,7 @@ export function SaveToDashboard({ query, defaultTitle }: { query: ExploreQueryIn
       chartType: query.chartType ?? null,
       dimensions: query.dimensions,
       measures: query.measures,
-      filters: query.filters ?? [],
+      filters: query.filters ?? emptyFilterSet(),
       sort: query.sort ?? [],
       limit: query.limit ?? 200,
     },

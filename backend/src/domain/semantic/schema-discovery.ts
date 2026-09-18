@@ -236,6 +236,22 @@ function relationshipsOf(tables: PhysicalTable[]): Relationship[] {
   );
 }
 
+function reachableTables(baseTable: string, relationships: Relationship[]): Set<string> {
+  const reached = new Set([baseTable]);
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const relationship of relationships) {
+      const forward = reached.has(relationship.fromTable) && !reached.has(relationship.toTable);
+      const backward = reached.has(relationship.toTable) && !reached.has(relationship.fromTable);
+      if (!forward && !backward) continue;
+      reached.add(forward ? relationship.toTable : relationship.fromTable);
+      progress = true;
+    }
+  }
+  return reached;
+}
+
 const GEO_ORDER: GeographyLevel[] = ["country", "state", "city", "postal_code"];
 
 function inferHierarchies(fields: SemanticField[]) {
@@ -265,7 +281,13 @@ export function deriveSemanticModel(
 ): SemanticModel {
   const currency = options.defaultCurrency ?? "USD";
   const baseTable = options.baseTable ?? tables[0]?.name ?? "";
-  const fields = tables.flatMap((table) => table.columns.map((column) => toField(column, table, currency)));
+  const relationships = relationshipsOf(tables);
+  const reachable = reachableTables(baseTable, relationships);
+
+  // A table with no join path to the base table can never be queried, so its columns stay out of sight.
+  const fields = tables
+    .flatMap((table) => table.columns.map((column) => toField(column, table, currency)))
+    .map((field) => (reachable.has(field.table) ? field : { ...field, hidden: true }));
 
   const seen = new Set<string>();
   const unique = fields.filter((field) => {
@@ -282,7 +304,7 @@ export function deriveSemanticModel(
     baseTable,
     fields: unique,
     metrics: [],
-    hierarchies: inferHierarchies(unique),
-    relationships: relationshipsOf(tables),
+    hierarchies: inferHierarchies(unique.filter((field) => !field.hidden)),
+    relationships,
   };
 }

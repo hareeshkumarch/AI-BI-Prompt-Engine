@@ -6,7 +6,8 @@ import { engineDialect, runCompiledQuery } from "../execution/query-service";
 import type { ExecutionStats } from "../execution/types";
 import { channel, createChartSpec, DEFAULT_LIMIT, type ChartSpec } from "./chart-spec";
 import { validateChartSpec, type ValidationIssue } from "./chart-spec-validator";
-import { combine, where, type ComparisonOperator, type FilterValue } from "./filter-ast";
+import type { ComparisonOperator, FilterValue } from "./filter-ast";
+import { emptyFilterSet, toFilterNode, type FilterClause, type FilterSet } from "./filter-set";
 import { compileQuery } from "./query-compiler";
 import { demoSemanticModel } from "./demo-warehouse";
 import { fieldByName, type Aggregation, type SemanticModel, type TimeGrain } from "./semantic-model";
@@ -27,10 +28,28 @@ export type ExploreQueryInput = {
   chartType?: ChartType | null;
   dimensions: ExploreChannelInput[];
   measures: ExploreChannelInput[];
-  filters?: ExploreFilterInput[];
+  filters?: FilterSet | ExploreFilterInput[] | null;
   sort?: { field: string; direction: "asc" | "desc" }[];
   limit?: number;
 };
+
+// Dashboards saved before filters became a tree still carry a flat array.
+export function normalizeFilters(input: FilterSet | ExploreFilterInput[] | null | undefined): FilterSet {
+  if (!input) return emptyFilterSet();
+  if (Array.isArray(input)) {
+    return {
+      combinator: "and",
+      clauses: input.map((item): FilterClause => ({
+        kind: "condition",
+        field: item.field,
+        operator: item.operator,
+        values: item.values,
+      })),
+      groups: [],
+    };
+  }
+  return { combinator: input.combinator ?? "and", negate: input.negate, clauses: input.clauses ?? [], groups: input.groups ?? [] };
+}
 
 export class ExploreError extends Error {
   readonly code: string;
@@ -89,7 +108,7 @@ function toSpec(model: SemanticModel, input: ExploreQueryInput): ChartSpec {
     const field = fieldByName(model, item.field);
     return channel(item.field, { aggregation: item.aggregation ?? field?.defaultAggregation ?? "sum" });
   });
-  const filters = combine((input.filters ?? []).map((item) => where(item.field, item.operator, ...item.values)));
+  const filters = toFilterNode(normalizeFilters(input.filters));
 
   return createChartSpec({
     id: randomUUID(),
