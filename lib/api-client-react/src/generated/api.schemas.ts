@@ -138,6 +138,16 @@ export interface QueryResult {
   truncated: boolean;
 }
 
+export type WidgetSize = typeof WidgetSize[keyof typeof WidgetSize];
+
+
+export const WidgetSize = {
+  small: 'small',
+  medium: 'medium',
+  large: 'large',
+  full: 'full',
+} as const;
+
 export type Aggregation = typeof Aggregation[keyof typeof Aggregation];
 
 
@@ -153,6 +163,149 @@ export const Aggregation = {
   p95: 'p95',
   none: 'none',
 } as const;
+
+export interface ExploreChannel {
+  field: string;
+  aggregation?: Aggregation;
+  /** @nullable */
+  grain?: string | null;
+}
+
+export type ExploreFilterOperator = typeof ExploreFilterOperator[keyof typeof ExploreFilterOperator];
+
+
+export const ExploreFilterOperator = {
+  eq: 'eq',
+  neq: 'neq',
+  gt: 'gt',
+  gte: 'gte',
+  lt: 'lt',
+  lte: 'lte',
+  between: 'between',
+  in: 'in',
+  not_in: 'not_in',
+  contains: 'contains',
+  not_contains: 'not_contains',
+  starts_with: 'starts_with',
+  ends_with: 'ends_with',
+  is_null: 'is_null',
+  is_not_null: 'is_not_null',
+} as const;
+
+export interface ExploreFilter {
+  field: string;
+  operator: ExploreFilterOperator;
+  values: unknown[];
+}
+
+export type ExploreSortDirection = typeof ExploreSortDirection[keyof typeof ExploreSortDirection];
+
+
+export const ExploreSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export interface ExploreSort {
+  field: string;
+  direction: ExploreSortDirection;
+}
+
+export interface WidgetQuery {
+  dimensions: ExploreChannel[];
+  measures: ExploreChannel[];
+  filters: ExploreFilter[];
+  sort: ExploreSort[];
+  limit: number;
+}
+
+export interface Widget {
+  id: string;
+  title: string;
+  /** @nullable */
+  chartType: string | null;
+  size: WidgetSize;
+  position: number;
+  query: WidgetQuery;
+}
+
+export interface DashboardPage {
+  id: string;
+  name: string;
+  position: number;
+  widgets: Widget[];
+}
+
+export type RefreshMode = typeof RefreshMode[keyof typeof RefreshMode];
+
+
+export const RefreshMode = {
+  manual: 'manual',
+  interval: 'interval',
+} as const;
+
+export interface Dashboard {
+  id: string;
+  name: string;
+  description: string;
+  modelId: string;
+  pages: DashboardPage[];
+  refreshMode: RefreshMode;
+  refreshIntervalSeconds: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DashboardSummary {
+  id: string;
+  name: string;
+  description: string;
+  modelId: string;
+  refreshMode: RefreshMode;
+  refreshIntervalSeconds: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  pageCount: number;
+  widgetCount: number;
+}
+
+export interface CreateDashboardInput {
+  name?: string;
+  description?: string;
+}
+
+export interface UpdateDashboardInput {
+  name?: string;
+  description?: string;
+  refreshMode?: RefreshMode;
+  refreshIntervalSeconds?: number;
+}
+
+export interface AddPageInput {
+  name?: string;
+}
+
+export interface AddWidgetInput {
+  title?: string;
+  /** @nullable */
+  chartType?: string | null;
+  size?: WidgetSize;
+  query: WidgetQuery;
+}
+
+export interface UpdateWidgetInput {
+  title?: string;
+  /** @nullable */
+  chartType?: string | null;
+  size?: WidgetSize;
+  query?: WidgetQuery;
+}
+
+export interface ReorderWidgetsInput {
+  order: string[];
+}
 
 export type FieldRoleName = typeof FieldRoleName[keyof typeof FieldRoleName];
 
@@ -228,53 +381,6 @@ export interface SemanticModelSummary {
   fields: SemanticFieldSummary[];
   metrics: SemanticMetricSummary[];
   hierarchies: SemanticHierarchySummary[];
-}
-
-export interface ExploreChannel {
-  field: string;
-  aggregation?: Aggregation;
-  /** @nullable */
-  grain?: string | null;
-}
-
-export type ExploreFilterOperator = typeof ExploreFilterOperator[keyof typeof ExploreFilterOperator];
-
-
-export const ExploreFilterOperator = {
-  eq: 'eq',
-  neq: 'neq',
-  gt: 'gt',
-  gte: 'gte',
-  lt: 'lt',
-  lte: 'lte',
-  between: 'between',
-  in: 'in',
-  not_in: 'not_in',
-  contains: 'contains',
-  not_contains: 'not_contains',
-  starts_with: 'starts_with',
-  ends_with: 'ends_with',
-  is_null: 'is_null',
-  is_not_null: 'is_not_null',
-} as const;
-
-export interface ExploreFilter {
-  field: string;
-  operator: ExploreFilterOperator;
-  values: unknown[];
-}
-
-export type ExploreSortDirection = typeof ExploreSortDirection[keyof typeof ExploreSortDirection];
-
-
-export const ExploreSortDirection = {
-  asc: 'asc',
-  desc: 'desc',
-} as const;
-
-export interface ExploreSort {
-  field: string;
-  direction: ExploreSortDirection;
 }
 
 export interface ExploreQueryInput {

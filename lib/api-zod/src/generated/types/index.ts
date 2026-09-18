@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addPageInput';
+export * from './addWidgetInput';
 export * from './aggregation';
 export * from './chartEncoding';
 export * from './chartEncodingColorJob';
@@ -14,6 +16,10 @@ export * from './chartEncodingOrientation';
 export * from './chartEncodingStack';
 export * from './chartType';
 export * from './columnMetric';
+export * from './createDashboardInput';
+export * from './dashboard';
+export * from './dashboardPage';
+export * from './dashboardSummary';
 export * from './dataConnection';
 export * from './dataConnectionKind';
 export * from './dataConnectionStatus';
@@ -49,6 +55,8 @@ export * from './queryRunInput';
 export * from './queryRunInputMode';
 export * from './queryRunSummary';
 export * from './queryRunSummaryStatus';
+export * from './refreshMode';
+export * from './reorderWidgetsInput';
 export * from './repairRunInput';
 export * from './schemaColumn';
 export * from './schemaColumnSemanticType';
@@ -61,5 +69,10 @@ export * from './semanticModelSummary';
 export * from './studioOverview';
 export * from './studioOverviewSystemStatus';
 export * from './temporalGrain';
+export * from './updateDashboardInput';
+export * from './updateWidgetInput';
 export * from './validationIssue';
 export * from './validationIssueSeverity';
+export * from './widget';
+export * from './widgetQuery';
+export * from './widgetSize';

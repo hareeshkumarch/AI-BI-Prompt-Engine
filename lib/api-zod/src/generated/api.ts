@@ -18,6 +18,601 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary List dashboards
+ */
+export const ListDashboardsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "pageCount": zod.number().int(),
+  "widgetCount": zod.number().int()
+})
+export const ListDashboardsResponse = zod.array(ListDashboardsResponseItem)
+
+
+/**
+ * @summary Create a dashboard
+ */
+export const CreateDashboardBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+export const CreateDashboardResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a dashboard
+ */
+export const GetDashboardParams = zod.object({
+  "dashboardId": zod.coerce.string()
+})
+
+export const GetDashboardResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update dashboard settings
+ */
+export const UpdateDashboardParams = zod.object({
+  "dashboardId": zod.coerce.string()
+})
+
+export const UpdateDashboardBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "refreshMode": zod.enum(['manual', 'interval']).optional(),
+  "refreshIntervalSeconds": zod.number().int().optional()
+})
+
+export const UpdateDashboardResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a dashboard
+ */
+export const DeleteDashboardParams = zod.object({
+  "dashboardId": zod.coerce.string()
+})
+
+export const DeleteDashboardResponse = zod.void()
+
+
+/**
+ * @summary Add a page
+ */
+export const AddDashboardPageParams = zod.object({
+  "dashboardId": zod.coerce.string()
+})
+
+export const AddDashboardPageBody = zod.object({
+  "name": zod.string().optional()
+})
+
+export const AddDashboardPageResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Add a widget to a page
+ */
+export const AddDashboardWidgetParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string()
+})
+
+export const AddDashboardWidgetBody = zod.object({
+  "title": zod.string().optional(),
+  "chartType": zod.string().nullish(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']).optional(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+})
+
+export const AddDashboardWidgetResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Reorder the widgets on a page
+ */
+export const ReorderDashboardWidgetsParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string()
+})
+
+export const ReorderDashboardWidgetsBody = zod.object({
+  "order": zod.array(zod.string())
+})
+
+export const ReorderDashboardWidgetsResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a widget
+ */
+export const UpdateDashboardWidgetParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string(),
+  "widgetId": zod.coerce.string()
+})
+
+export const UpdateDashboardWidgetBody = zod.object({
+  "title": zod.string().optional(),
+  "chartType": zod.string().nullish(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']).optional(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+}).optional()
+})
+
+export const UpdateDashboardWidgetResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a widget
+ */
+export const DeleteDashboardWidgetParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string(),
+  "widgetId": zod.coerce.string()
+})
+
+export const DeleteDashboardWidgetResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Duplicate a widget
+ */
+export const DuplicateDashboardWidgetParams = zod.object({
+  "dashboardId": zod.coerce.string(),
+  "pageId": zod.coerce.string(),
+  "widgetId": zod.coerce.string()
+})
+
+export const DuplicateDashboardWidgetResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "modelId": zod.string(),
+  "pages": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "position": zod.number().int(),
+  "widgets": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "chartType": zod.string().nullable(),
+  "size": zod.enum(['small', 'medium', 'large', 'full']),
+  "position": zod.number().int(),
+  "query": zod.object({
+  "dimensions": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "measures": zod.array(zod.object({
+  "field": zod.string(),
+  "aggregation": zod.enum(['sum', 'avg', 'min', 'max', 'count', 'count_distinct', 'median', 'p90', 'p95', 'none']).optional(),
+  "grain": zod.string().nullish()
+})),
+  "filters": zod.array(zod.object({
+  "field": zod.string(),
+  "operator": zod.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'in', 'not_in', 'contains', 'not_contains', 'starts_with', 'ends_with', 'is_null', 'is_not_null']),
+  "values": zod.array(zod.unknown())
+})),
+  "sort": zod.array(zod.object({
+  "field": zod.string(),
+  "direction": zod.enum(['asc', 'desc'])
+})),
+  "limit": zod.number().int()
+})
+}))
+})),
+  "refreshMode": zod.enum(['manual', 'interval']),
+  "refreshIntervalSeconds": zod.number().int(),
+  "version": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get the BI workspace overview
  */
 export const GetStudioOverviewResponse = zod.object({

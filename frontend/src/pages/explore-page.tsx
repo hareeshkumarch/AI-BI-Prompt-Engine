@@ -5,6 +5,7 @@ import type { Aggregation, ChartEncoding, ExploreChannel, ExploreFilter, Explore
 import { ChartSwitcher, InsightChart } from '@/components/insight-chart';
 import { FieldPicker, isMeasure, metricAsField, type PickerField } from '@/components/field-picker';
 import { FilterBar } from '@/components/filter-bar';
+import { SaveToDashboard } from '@/components/save-to-dashboard';
 import { DataResultTable, EmptyState, ErrorState, LoadingBlock, ResultSchema, SectionHeading, useDebouncedValue } from '@/components/studio-ui';
 
 const GRAINS = ['hour', 'day', 'week', 'month', 'quarter', 'year'] as const;
@@ -211,6 +212,12 @@ export function ExplorePage() {
             <>
               <section className="rounded-sm border border-border bg-card p-4" data-testid="panel-chart">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SaveToDashboard
+                      query={JSON.parse(debouncedPayload)}
+                      defaultTitle={[...measures.map((item) => item.label), dimensions.length > 0 ? `by ${dimensions.map((item) => item.label).join(' & ')}` : ''].filter(Boolean).join(' ')}
+                    />
+                  </div>
                   <ChartSwitcher
                     options={encoding ? [encoding, ...alternatives] : []}
                     active={encoding?.chartType ?? ''}

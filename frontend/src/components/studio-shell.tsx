@@ -1,4 +1,4 @@
-import { Compass, Database, GitBranch, LayoutDashboard, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
+import { Compass, Database, GitBranch, LayoutDashboard, LayoutGrid, Menu, Network, PanelLeft, Settings2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useGetStudioOverview } from '@workspace/api-client-react';
@@ -9,6 +9,7 @@ type StudioShellProps = { children: React.ReactNode };
 const navItems = [
   { href: '/', label: 'Workspace', icon: LayoutDashboard },
   { href: '/explore', label: 'Explore', icon: Compass },
+  { href: '/dashboards', label: 'Dashboards', icon: LayoutGrid },
   { href: '/schema', label: 'Schema context', icon: GitBranch },
   { href: '/connections', label: 'Connections', icon: Network },
 ];
@@ -18,7 +19,7 @@ export function StudioShell({ children }: StudioShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: overview } = useGetStudioOverview();
   const degraded = overview?.systemStatus === 'degraded';
-  const current = navItems.find((item) => item.href === location)?.label ?? (location.startsWith('/runs/') ? 'Run detail' : 'Workspace');
+  const current = navItems.find((item) => item.href === location)?.label ?? (location.startsWith('/runs/') ? 'Run detail' : location.startsWith('/dashboards/') ? 'Dashboard' : 'Workspace');
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -52,7 +53,7 @@ export function StudioShell({ children }: StudioShellProps) {
           </div>
           <nav className="space-y-1" aria-label="Primary navigation">
             {navItems.map((item) => {
-              const active = location === item.href;
+              const active = location === item.href || (item.href !== '/' && location.startsWith(`${item.href}/`));
               const Icon = item.icon;
               return (
                 <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`group flex items-center gap-3 rounded-sm border px-3 py-2.5 text-sm transition-colors ${active ? 'border-sidebar-primary/35 bg-sidebar-primary/12 text-sidebar-primary' : 'border-transparent text-sidebar-foreground/65 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground'}`} data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}>
